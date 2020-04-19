@@ -23,6 +23,7 @@ use loader::load_images;
 use map::*;
 mod units;
 use units::*;
+mod idx;
 
 #[wasm_bindgen(start)]
 pub async fn start() -> Result<(), JsValue> {
