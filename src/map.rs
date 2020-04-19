@@ -74,8 +74,7 @@ impl Tile {
 
 pub struct Map<'a> {
     pub coords: (isize, isize),
-    tiles: [Tile; 61],
-    pub units: [Option<Unit>; 61],
+    tiles: [(Tile, Option<Unit>); 61],
     textures: [&'a Image; TEXTURES_NUMBER],
     canvas: Canvas,
     pub dimensions: (usize, usize)
@@ -87,21 +86,21 @@ impl<'a> Map<'a> {
         let mut canvas = Canvas::new();
         canvas.set_width(CANVAS_WIDTH as u32);
         canvas.set_height(CANVAS_HEIGHT as u32);
-        let tiles = arr!({
-            let random = get_random(2);
-            match random {
-                0 => Tile::GrassyPlain(get_random(3)),
-                1 => Tile::Forest(get_random(3)),
-                _ => Tile::Plain(get_random(3)),
-            }
-        }; 61);
+        let tiles = arr!((
+            {
+                let random = get_random(2);
+                match random {
+                    0 => Tile::GrassyPlain(get_random(3)),
+                    1 => Tile::Forest(get_random(3)),
+                    _ => Tile::Plain(get_random(3)),
+                }
+            }, None); 61);
 
         let mut map = Map {
             coords: (0,0),
             tiles,
             textures,
             canvas,
-            units: arr!(None; 61),
             dimensions
         };
 
@@ -111,7 +110,7 @@ impl<'a> Map<'a> {
     }
 
     pub fn update_canvas(&mut self) {
-        for (idx, tile) in self.tiles.iter().enumerate() {
+        for (idx, (tile, unit)) in self.tiles.iter().enumerate() {
             let coords = idx_to_coords(idx);
             let screen_coords = (coords.0 * 253, coords.1 * 193);
             let offset = match coords.1 {
@@ -128,25 +127,23 @@ impl<'a> Map<'a> {
             if coords.1 == 8 || (coords.0 == 0 && coords.1 >= 4) || (coords.1 >= 4 && (idx_to_y(idx) != idx_to_y(idx+1))) {
                 self.canvas.draw_image(((offset + screen_coords.0) as f64, screen_coords.1 as f64 + 318.45), self.textures[12]);
             }
-        }
 
-        let context = self.canvas.get_2d_canvas_rendering_context();
-        for (idx, unit) in self.units.iter().enumerate().filter(|(_idx, u)| u.is_some()) {
-            let unit = unit.as_ref().unwrap();
-            
-            let coords = idx_to_coords(idx);
-            let screen_coords = (coords.0 * 253, coords.1 * 193);
-            let offset = match coords.1 {
-                0 | 8 => 4,
-                1 | 7 => 3,
-                2 | 6 => 2,
-                3 | 5 => 1,
-                4 => 0,
-                _ => panic!("can't happen")
-            } * 128;
-            
-            //self.canvas.draw_image(((offset + screen_coords.0) as f64, screen_coords.1 as f64 + 100.0), self.textures[unit.unit_type.get_texture_idx()]);
-            context.draw_image_with_html_image_element_and_dw_and_dh(self.textures[unit.unit_type.get_texture_idx()].get_html_element(), (offset + screen_coords.0) as f64 + 50.0, screen_coords.1 as f64 + 160.0, 150.0, 150.0).unwrap();
+            if let Some(unit) = unit {
+                let context = self.canvas.get_2d_canvas_rendering_context();
+                let coords = idx_to_coords(idx);
+                let screen_coords = (coords.0 * 253, coords.1 * 193);
+                let offset = match coords.1 {
+                    0 | 8 => 4,
+                    1 | 7 => 3,
+                    2 | 6 => 2,
+                    3 | 5 => 1,
+                    4 => 0,
+                    _ => panic!("can't happen")
+                } * 128;
+                
+                //self.canvas.draw_image(((offset + screen_coords.0) as f64, screen_coords.1 as f64 + 100.0), self.textures[unit.unit_type.get_texture_idx()]);
+                context.draw_image_with_html_image_element_and_dw_and_dh(self.textures[unit.unit_type.get_texture_idx()].get_html_element(), (offset + screen_coords.0) as f64 + 50.0, screen_coords.1 as f64 + 160.0, 150.0, 150.0).unwrap();
+            }
         }
     }
 }
@@ -171,7 +168,7 @@ impl<'a> Drawable for Map<'a> {
 }
 
 impl<'a> std::ops::Index<HexIndex> for Map<'a> {
-    type Output = Tile;
+    type Output = (Tile, Option<Unit>);
 
     fn index(&self, index: HexIndex) -> &Self::Output {
         &self.tiles[index.get_index()]

@@ -35,17 +35,17 @@ pub async fn start() -> Result<(), JsValue> {
     let mut arrows = (false, false, false, false);
     let (mut width, mut height) = (window.get_width(), window.get_height());
     let mut map = Map::new([&t[0], &t[1], &t[2], &t[3], &t[4], &t[5], &t[6], &t[7], &t[8], &t[9], &t[10], &t[11], &t[12], &t[13], &t[14], &t[15], &t[16]], (width as usize, height as usize));
-    map.units[3] = Some(Unit::new(UnitType::Archer));
-    map.units[13] = Some(Unit::new(UnitType::Archer));
-    map.units[16] = Some(Unit::new(UnitType::Archer));
-    map.units[5] = Some(Unit::new(UnitType::Archer));
-    map.units[6] = Some(Unit::new(UnitType::Scout));
-    map.units[26] = Some(Unit::new(UnitType::Scout));
-    map.units[32] = Some(Unit::new(UnitType::Scout));
-    map.units[34] = Some(Unit::new(UnitType::Knight));
-    map.units[52] = Some(Unit::new(UnitType::Knight));
-    map.units[29] = Some(Unit::new(UnitType::Knight));
-    map.units[29] = Some(Unit::new(UnitType::Barbarian));
+    map[3.into()].1 = Some(Unit::new(UnitType::Archer));
+    map[13.into()].1 = Some(Unit::new(UnitType::Archer));
+    map[16.into()].1 = Some(Unit::new(UnitType::Archer));
+    map[5.into()].1 = Some(Unit::new(UnitType::Archer));
+    map[6.into()].1 = Some(Unit::new(UnitType::Scout));
+    map[26.into()].1 = Some(Unit::new(UnitType::Scout));
+    map[32.into()].1 = Some(Unit::new(UnitType::Scout));
+    map[34.into()].1 = Some(Unit::new(UnitType::Knight));
+    map[52.into()].1 = Some(Unit::new(UnitType::Knight));
+    map[29.into()].1 = Some(Unit::new(UnitType::Knight));
+    map[29.into()].1 = Some(Unit::new(UnitType::Barbarian));
     map.update_canvas();
 
     loop {
