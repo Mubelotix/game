@@ -1,9 +1,10 @@
+#![allow(unused_imports)]
+
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_game_lib::graphics::image::Image;
 use wasm_game_lib::graphics::sprite::Sprite;
 use wasm_game_lib::inputs::{event::Event, keyboard::*};
 use wasm_game_lib::graphics::window::Window;
-use wasm_game_lib::system::log;
 use wasm_game_lib::inputs::event::types::*;
 use wasm_game_lib::system::sleep;
 use std::time::Duration;
@@ -88,6 +89,4 @@ pub async fn start() -> Result<(), JsValue> {
 
         sleep(Duration::from_millis(16)).await;
     }
-
-    Ok(())
 }
