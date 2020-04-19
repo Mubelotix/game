@@ -1,5 +1,5 @@
 use wasm_game_lib::graphics::{drawable::*, canvas::Canvas, image::*};
-use crate::{random::get_random, units::*};
+use crate::{random::get_random, units::*, idx::HexIndex};
 use arr_macro::arr;
 
 fn idx_to_y(idx: usize) -> usize {
@@ -167,5 +167,19 @@ impl<'a> Drawable for Map<'a> {
 
         let canvas_element = canvas.get_2d_canvas_rendering_context();
         canvas_element.draw_image_with_html_canvas_element_and_dw_and_dh(self.canvas.get_canvas_element(), self.coords.0 as f64 + remaining_width / 2.0, self.coords.1 as f64 + remaining_height / 2.0, fitting_width, fitting_height).unwrap();
+    }
+}
+
+impl<'a> std::ops::Index<HexIndex> for Map<'a> {
+    type Output = Tile;
+
+    fn index(&self, index: HexIndex) -> &Self::Output {
+        &self.tiles[index.get_index()]
+    }
+}
+
+impl<'a> std::ops::IndexMut<HexIndex> for Map<'a> {
+    fn index_mut(&mut self, index: HexIndex) -> &mut Self::Output {
+        &mut self.tiles[index.get_index()]
     }
 }
