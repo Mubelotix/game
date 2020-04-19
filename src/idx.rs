@@ -78,7 +78,7 @@ fn coords_to_idx(x: usize, y: usize) -> usize {
     index
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct HexIndex {
     pos: (usize, usize, usize), // (x, y, index)
 }
@@ -150,9 +150,9 @@ impl HexIndex {
 
     pub fn get_top_right_neighbour(&self) -> Option<HexIndex> {
         if self.top_right_bloc_present() {
-            if self.pos.1 < 4 {
+            if self.pos.1 <= 4 {
                 Some(HexIndex {
-                    pos: (self.pos.0, self.pos.1 - 1, self.pos.2 - line_lenght(self.pos.1) + 1)
+                    pos: (self.pos.0, self.pos.1 - 1, self.pos.2 - (line_lenght(self.pos.1) - 1))
                 })
             } else {
                 Some(HexIndex {
@@ -166,7 +166,7 @@ impl HexIndex {
 
     pub fn get_top_left_neighbour(&self) -> Option<HexIndex> {
         if self.top_left_bloc_present() {
-            if self.pos.1 < 4 {
+            if self.pos.1 <= 4 {
                 Some(HexIndex {
                     pos: (self.pos.0 - 1, self.pos.1 - 1, self.pos.2 - line_lenght(self.pos.1))
                 })

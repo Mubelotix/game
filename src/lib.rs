@@ -25,6 +25,7 @@ use map::*;
 mod units;
 use units::*;
 mod idx;
+mod pathfinder;
 
 #[wasm_bindgen(start)]
 pub async fn start() -> Result<(), JsValue> {
