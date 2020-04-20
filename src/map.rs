@@ -1,4 +1,4 @@
-use wasm_game_lib::graphics::{drawable::*, canvas::Canvas, image::*};
+use wasm_game_lib::graphics::{drawable::*, canvas::Canvas, image::*, color::*};
 use crate::{random::get_random, units::*, idx::HexIndex};
 use arr_macro::arr;
 
@@ -51,8 +51,8 @@ fn idx_to_coords(idx: usize) -> (usize, usize) {
 }
 
 const TEXTURES_NUMBER: usize = 17;
-const CANVAS_WIDTH: f64 = 9.0*253.0;
-const CANVAS_HEIGHT: f64 = 8.0*256.0 + 10.0;
+pub const CANVAS_WIDTH: f64 = 9.0*253.0;
+pub const CANVAS_HEIGHT: f64 = 8.0*256.0 + 10.0;
 
 
 #[derive(Clone, Copy, Debug)]
@@ -145,6 +145,43 @@ impl<'a> Map<'a> {
                 context.draw_image_with_html_image_element_and_dw_and_dh(self.textures[unit.unit_type.get_texture_idx()].get_html_element(), (offset + screen_coords.0) as f64 + 50.0, screen_coords.1 as f64 + 160.0, 150.0, 150.0).unwrap();
             }
         }
+    }
+
+    pub fn screen_coords_to_internal_canvas_coords(&self, x: usize, y: usize) -> (isize, isize) {
+        let factor_width: f64 = self.dimensions.0 as f64 / CANVAS_WIDTH;
+        let factor_height = self.dimensions.1 as f64 / CANVAS_HEIGHT;
+        let smaller_factor = if factor_width < factor_height {
+            factor_width
+        } else {
+            factor_height
+        };
+        let fitting_width = CANVAS_WIDTH * smaller_factor;
+        let fitting_height = CANVAS_HEIGHT * smaller_factor;
+        let remaining_width = self.dimensions.0 as f64 - fitting_width;
+        let remaining_height = self.dimensions.1 as f64 - fitting_height;
+        (((x as f64 - remaining_width / 2.0) / smaller_factor) as isize, ((y as f64 - remaining_height / 2.0) / smaller_factor) as isize)
+    }
+
+    pub fn internal_coords_to_screen_coords(dimensions: (u32, u32), x: isize, y: isize) -> (usize, usize) {
+        let factor_width: f64 = dimensions.0 as f64 / CANVAS_WIDTH;
+        let factor_height = dimensions.1 as f64 / CANVAS_HEIGHT;
+        let smaller_factor = if factor_width < factor_height {
+            factor_width
+        } else {
+            factor_height
+        };
+        let fitting_width = CANVAS_WIDTH * smaller_factor;
+        let fitting_height = CANVAS_HEIGHT * smaller_factor;
+        let remaining_width = dimensions.0 as f64 - fitting_width;
+        let remaining_height = dimensions.1 as f64 - fitting_height;
+
+
+        let mut x = x as f64 * smaller_factor;
+        x += remaining_width/2.0;
+        let mut y = y as f64 * smaller_factor;
+        y += remaining_height/2.0;
+
+        (x as usize, y as usize)
     }
 }
 

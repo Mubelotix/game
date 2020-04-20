@@ -211,19 +211,39 @@ impl HexIndex {
             None
         }
     }
-}
 
-impl From<usize> for HexIndex {
-    fn from(index: usize) -> HexIndex {
-        assert!(index < 61);
-        HexIndex {
-            pos: (idx_to_x(index), idx_to_y(index), index)
-        }
+    pub fn get_canvas_coords(&self) -> (usize, usize) {
+        let canvas_coords = (self.pos.0 * 253, self.pos.1 * 193);
+        let offset = match self.pos.1 {
+            0 | 8 => 4,
+            1 | 7 => 3,
+            2 | 6 => 2,
+            3 | 5 => 1,
+            _ => 0,
+        } * 128;
+        let x = canvas_coords.0 + offset;
+        let y = canvas_coords.1;
+        (x, y)
     }
 }
 
-impl From<(usize, usize)> for HexIndex {
-    fn from((x, y): (usize, usize)) -> HexIndex {
+impl std::convert::TryFrom<usize> for HexIndex {
+    type Error = ();
+
+    fn try_from(index: usize) -> Result<Self, Self::Error> {
+        if index > 60 {
+            return Err(())
+        }
+        Ok(HexIndex {
+            pos: (idx_to_x(index), idx_to_y(index), index)
+        })
+    }
+}
+
+impl std::convert::TryFrom<(usize, usize)> for HexIndex {
+    type Error = ();
+
+    fn try_from((x, y): (usize, usize)) -> Result<Self, Self::Error> {
         let index = match y {
             0 => 0,
             1 => 5,
@@ -234,66 +254,69 @@ impl From<(usize, usize)> for HexIndex {
             6 => 43,
             7 => 50,
             8 => 56,
-            y => panic!("y:{} is out of bound", y),
+            _ => return Err(())
         } + x;
-        assert!(x < line_lenght(y));
-        HexIndex {
-            pos: (x, y, index)
+        if x >= line_lenght(y) {
+            return Err(())
         }
+        Ok(HexIndex {
+            pos: (x, y, index)
+        })
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::convert::TryInto;
 
     #[test]
-    #[should_panic(expected = "assertion failed: index < 61")]
+    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ()")]
     fn usize_into_hexindex_failing() {
-        let _hexindex: HexIndex = 89.into();
+        let _hexindex: HexIndex = 89.try_into().unwrap();
     }
 
     #[test]
     fn usize_into_hexindex_working() {
-        let hexindex: HexIndex = 23.into();
+        let hexindex: HexIndex = 23.try_into().unwrap();
         assert_eq!(hexindex.get_coords(), (5, 3));
         assert_eq!(hexindex.get_index(), 23);
 
-        let hexindex: HexIndex = 42.into();
+        let hexindex: HexIndex = 42.try_into().unwrap();
         assert_eq!(hexindex.get_coords(), (7, 5));
         assert_eq!(hexindex.get_index(), 42);
     }
 
     #[test]
-    #[should_panic(expected = "y:23 is out of bound")]
+    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ()")]
     fn usize_tuple_into_hexindex_failing() {
-        let _hexindex: HexIndex = (52, 23).into();
+        let _hexindex: HexIndex = (52, 23).try_into().unwrap();
     }
 
     #[test]
     fn usize_tuple_into_hexindex_working() {
-        let hexindex: HexIndex = (7, 5).into();
+        let hexindex: HexIndex = (7, 5).try_into().unwrap();
         assert_eq!(hexindex.get_coords(), (7, 5));
         assert_eq!(hexindex.get_index(), 42);
     }
 
     #[test]
     fn test_neighbors() {
-        let top_top_left: HexIndex = (0,0).into();
-        let top_left: HexIndex = (0,2).into();
-        let left: HexIndex = (0,4).into();
-        let bottom_left: HexIndex = (0,6).into();
-        let bottom_bottom_left: HexIndex = (0,8).into();
+        let top_top_left: HexIndex = (0,0).try_into().unwrap();
+        let top_left: HexIndex = (0,2).try_into().unwrap();
+        let left: HexIndex = (0,4).try_into().unwrap();
+        let bottom_left: HexIndex = (0,6).try_into().unwrap();
+        let bottom_bottom_left: HexIndex = (0,8).try_into().unwrap();
 
-        let top_top_right: HexIndex = (4,0).into();
-        let top_right: HexIndex = (6,2).into();
-        let right: HexIndex = (8,4).into();
-        let bottom_right: HexIndex = (6,6).into();
-        let bottom_bottom_right: HexIndex = (4,8).into();
+        let top_top_right: HexIndex = (4,0).try_into().unwrap();
+        let top_right: HexIndex = (6,2).try_into().unwrap();
+        let right: HexIndex = (8,4).try_into().unwrap();
+        let bottom_right: HexIndex = (6,6).try_into().unwrap();
+        let bottom_bottom_right: HexIndex = (4,8).try_into().unwrap();
 
-        let top: HexIndex = (2,0).into();
-        let middle: HexIndex = (3,4).into();
-        let bottom: HexIndex = (3,8).into();
+        let top: HexIndex = (2,0).try_into().unwrap();
+        let middle: HexIndex = (3,4).try_into().unwrap();
+        let bottom: HexIndex = (3,8).try_into().unwrap();
 
         assert_eq!(top_top_left.neighbors_present(), (false, true, true, true, false, false));
         assert_eq!(top_left.neighbors_present(), (true, true, true, true, false, false));
