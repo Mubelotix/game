@@ -42,10 +42,11 @@ pub async fn start() -> Result<(), JsValue> {
     let (mut width, mut height) = (window.get_width(), window.get_height());
     let mut map = Map::new([&t[0], &t[1], &t[2], &t[3], &t[4], &t[5], &t[6], &t[7], &t[8], &t[9], &t[10], &t[11], &t[12], &t[13], &t[14], &t[15], &t[16]], (width as usize, height as usize));
     let mut path = Path::new();
-    map[&3.try_into().unwrap()].1 = Some(Unit::new(UnitType::Archer));
-    map[&6.try_into().unwrap()].1 = Some(Unit::new(UnitType::Scout));
-    map[&34.try_into().unwrap()].1 = Some(Unit::new(UnitType::Knight));
-    map[&29.try_into().unwrap()].1 = Some(Unit::new(UnitType::Barbarian));
+    let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]]);
+    units.set(&3.try_into().unwrap(), Some(Unit::new(UnitType::Archer)));
+    units.set(&4.try_into().unwrap(), Some(Unit::new(UnitType::Scout)));
+    units.set(&5.try_into().unwrap(), Some(Unit::new(UnitType::Knight)));
+    units.set(&6.try_into().unwrap(), Some(Unit::new(UnitType::Barbarian)));
     map.update_canvas();
 
     loop {
@@ -76,10 +77,10 @@ pub async fn start() -> Result<(), JsValue> {
                 }
                 Event::MouseEvent(me) => match me {
                     MouseEvent::Move(x, y) => {
-                        path.handle_mouse_move(&map, x, y);
+                        path.handle_mouse_move(&map, &units, x, y);
                     }
                     MouseEvent::Click(x, y) => {
-                        path.handle_mouse_click(&mut map, x, y);
+                        path.handle_mouse_click(&map, &mut units, x, y);
                     }
                     _ => (),
                 }
@@ -95,6 +96,7 @@ pub async fn start() -> Result<(), JsValue> {
         canvas.clear_with_black();
         canvas.draw(&map);
         canvas.draw(&path);
+        canvas.draw(&units);
 
         sleep(Duration::from_millis(16)).await;
     }

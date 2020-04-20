@@ -1,8 +1,8 @@
-use crate::{idx::HexIndex, map::*, units::Unit};
+use crate::{idx::HexIndex, map::*, units::*};
 use wasm_game_lib::graphics::{drawable::*, canvas::*, color::Color};
 use std::convert::TryInto;
 
-pub fn find_route(map: &Map, starting_point: HexIndex, arrival_point: HexIndex) -> Option<Vec<HexIndex>> {
+pub fn find_route(map: &Map, units: &Units, starting_point: HexIndex, arrival_point: HexIndex, max_moves: usize) -> Option<Vec<HexIndex>> {
     let mut travel_time: [Option<usize>; 61] = [None; 61];
     travel_time[starting_point.get_index()] = Some(0);
     let mut paths: Vec<HexIndex> = vec![starting_point];
@@ -11,40 +11,42 @@ pub fn find_route(map: &Map, starting_point: HexIndex, arrival_point: HexIndex) 
         let this_path = paths.remove(0);
         let travel_time_to_here = travel_time[this_path.get_index()].unwrap();
 
-        if let Some(path) = this_path.get_right_neighbour() {
-            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
-                travel_time[path.get_index()] = Some(travel_time_to_here + 1);
-                paths.push(path);
+        if travel_time_to_here < max_moves {
+            if let Some(path) = this_path.get_right_neighbour() {
+                if travel_time[path.get_index()].is_none() && units.get(&path).is_none() {
+                    travel_time[path.get_index()] = Some(travel_time_to_here + 1);
+                    paths.push(path);
+                }
             }
-        }
-        if let Some(path) = this_path.get_left_neighbour() {
-            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
-                travel_time[path.get_index()] = Some(travel_time_to_here + 1);
-                paths.push(path);
+            if let Some(path) = this_path.get_left_neighbour() {
+                if travel_time[path.get_index()].is_none() && units.get(&path).is_none() {
+                    travel_time[path.get_index()] = Some(travel_time_to_here + 1);
+                    paths.push(path);
+                }
             }
-        }
-        if let Some(path) = this_path.get_top_right_neighbour() {
-            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
-                travel_time[path.get_index()] = Some(travel_time_to_here + 1);
-                paths.push(path);
+            if let Some(path) = this_path.get_top_right_neighbour() {
+                if travel_time[path.get_index()].is_none() && units.get(&path).is_none() {
+                    travel_time[path.get_index()] = Some(travel_time_to_here + 1);
+                    paths.push(path);
+                }
             }
-        }
-        if let Some(path) = this_path.get_top_left_neighbour() {
-            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
-                travel_time[path.get_index()] = Some(travel_time_to_here + 1);
-                paths.push(path);
+            if let Some(path) = this_path.get_top_left_neighbour() {
+                if travel_time[path.get_index()].is_none() && units.get(&path).is_none() {
+                    travel_time[path.get_index()] = Some(travel_time_to_here + 1);
+                    paths.push(path);
+                }
             }
-        }
-        if let Some(path) = this_path.get_bottom_right_neighbour() {
-            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
-                travel_time[path.get_index()] = Some(travel_time_to_here + 1);
-                paths.push(path);
+            if let Some(path) = this_path.get_bottom_right_neighbour() {
+                if travel_time[path.get_index()].is_none() && units.get(&path).is_none() {
+                    travel_time[path.get_index()] = Some(travel_time_to_here + 1);
+                    paths.push(path);
+                }
             }
-        }
-        if let Some(path) = this_path.get_bottom_left_neighbour() {
-            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
-                travel_time[path.get_index()] = Some(travel_time_to_here + 1);
-                paths.push(path);
+            if let Some(path) = this_path.get_bottom_left_neighbour() {
+                if travel_time[path.get_index()].is_none() && units.get(&path).is_none() {
+                    travel_time[path.get_index()] = Some(travel_time_to_here + 1);
+                    paths.push(path);
+                }
             }
         }
     }
@@ -93,29 +95,27 @@ impl Path {
         }
     }
 
-    pub fn handle_mouse_move(&mut self, map: &Map, x: u32, y: u32) {
+    pub fn handle_mouse_move(&mut self, map: &Map, units: &Units, x: u32, y: u32) {
         if let Some((unit, route)) = &mut self.route {
             let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
             if let Some(index) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
-                *route = find_route(&map, *unit, index)
+                *route = find_route(&map, &units, *unit, index, units.get(unit).as_ref().unwrap().get_remaining_moves())
             } else {
                 *route = None;
             }
         }
     }
 
-    pub fn handle_mouse_click(&mut self, map: &mut Map, x: u32, y: u32) {
+    pub fn handle_mouse_click(&mut self, map: &Map, units: &mut Units, x: u32, y: u32) {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
         if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
             if let Some((selected_unit_idx, route)) = &self.route { // if a unit is selected
-                if map[&clicked_tile_idx].1.is_none() && route.is_some() {
-                    let selected_unit_tile = &mut map[&selected_unit_idx];
-                    let selected_unit = selected_unit_tile.1.take().unwrap();
-                    map[&clicked_tile_idx].1 = Some(selected_unit);
+                if units.get(&clicked_tile_idx).is_none() && route.is_some() {
+                    let selected_unit = units.get_mut(&selected_unit_idx).take().unwrap();
+                    units.set(&clicked_tile_idx, Some(selected_unit));
                     self.route = None;
-                    map.update_canvas();
                 }
-            } else if map[&clicked_tile_idx].1.is_some() { // if no unit is selected but a unit has been clicked
+            } else if units.get(&clicked_tile_idx).is_some() { // if no unit is selected but a unit has been clicked
                 self.route = Some((clicked_tile_idx, None));
             }
         }

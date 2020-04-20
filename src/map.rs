@@ -74,7 +74,7 @@ impl Tile {
 
 pub struct Map<'a> {
     pub coords: (isize, isize),
-    tiles: [(Tile, Option<Unit>); 61],
+    tiles: [Tile; 61],
     textures: [&'a Image; TEXTURES_NUMBER],
     canvas: Canvas,
     pub dimensions: (usize, usize)
@@ -94,7 +94,7 @@ impl<'a> Map<'a> {
                     1 => Tile::Forest(get_random(3)),
                     _ => Tile::Plain(get_random(3)),
                 }
-            }, None); 61);
+            }); 61);
 
         let mut map = Map {
             coords: (0,0),
@@ -110,7 +110,7 @@ impl<'a> Map<'a> {
     }
 
     pub fn update_canvas(&mut self) {
-        for (idx, (tile, unit)) in self.tiles.iter().enumerate() {
+        for (idx, tile) in self.tiles.iter().enumerate() {
             let coords = idx_to_coords(idx);
             let screen_coords = (coords.0 * 253, coords.1 * 193);
             let offset = match coords.1 {
@@ -126,23 +126,6 @@ impl<'a> Map<'a> {
 
             if coords.1 == 8 || (coords.0 == 0 && coords.1 >= 4) || (coords.1 >= 4 && (idx_to_y(idx) != idx_to_y(idx+1))) {
                 self.canvas.draw_image(((offset + screen_coords.0) as f64, screen_coords.1 as f64 + 318.45), self.textures[12]);
-            }
-
-            if let Some(unit) = unit {
-                let context = self.canvas.get_2d_canvas_rendering_context();
-                let coords = idx_to_coords(idx);
-                let screen_coords = (coords.0 * 253, coords.1 * 193);
-                let offset = match coords.1 {
-                    0 | 8 => 4,
-                    1 | 7 => 3,
-                    2 | 6 => 2,
-                    3 | 5 => 1,
-                    4 => 0,
-                    _ => panic!("can't happen")
-                } * 128;
-                
-                //self.canvas.draw_image(((offset + screen_coords.0) as f64, screen_coords.1 as f64 + 100.0), self.textures[unit.unit_type.get_texture_idx()]);
-                context.draw_image_with_html_image_element_and_dw_and_dh(self.textures[unit.unit_type.get_texture_idx()].get_html_element(), (offset + screen_coords.0) as f64 + 50.0, screen_coords.1 as f64 + 160.0, 150.0, 150.0).unwrap();
             }
         }
     }
@@ -175,7 +158,6 @@ impl<'a> Map<'a> {
         let remaining_width = dimensions.0 as f64 - fitting_width;
         let remaining_height = dimensions.1 as f64 - fitting_height;
 
-
         let mut x = x as f64 * smaller_factor;
         x += remaining_width/2.0;
         let mut y = y as f64 * smaller_factor;
@@ -205,7 +187,7 @@ impl<'a> Drawable for Map<'a> {
 }
 
 impl<'a> std::ops::Index<&HexIndex> for Map<'a> {
-    type Output = (Tile, Option<Unit>);
+    type Output = Tile;
 
     fn index(&self, index: &HexIndex) -> &Self::Output {
         &self.tiles[index.get_index()]
