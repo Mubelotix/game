@@ -66,7 +66,7 @@ pub fn find_route(map: &Map, starting_point: HexIndex, arrival_point: HexIndex) 
                 }
             }
     
-            last = smaller.1.clone();
+            last = *smaller.1;
         }
         full_path.reverse();
         Some(full_path)
@@ -76,15 +76,13 @@ pub fn find_route(map: &Map, starting_point: HexIndex, arrival_point: HexIndex) 
 }
 
 pub struct Path {
-    pub line_style: LineStyle,
-    pub route: Option<Vec<HexIndex>>,
-    pub start: HexIndex,
+    line_style: LineStyle,
+    route: Option<(HexIndex, Option<Vec<HexIndex>>)>,
 }
 
 impl Path {
     pub fn new() -> Path {
         Path {
-            start: 0.try_into().unwrap(),
             line_style: LineStyle {
                 cap: LineCap::Round,
                 color: Color::new(66, 135, 245),
@@ -94,17 +92,43 @@ impl Path {
             route: None
         }
     }
+
+    pub fn handle_mouse_move(&mut self, map: &Map, x: u32, y: u32) {
+        if let Some((unit, route)) = &mut self.route {
+            let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
+            if let Some(index) = HexIndex::from_canvas_coords(coords) {
+                *route = find_route(&map, *unit, index)
+            } else {
+                *route = None;
+            }
+        }
+    }
+
+    pub fn handle_mouse_click(&mut self, map: &mut Map, x: u32, y: u32) {
+        let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
+        if let Some(index) = HexIndex::from_canvas_coords(coords) {
+            if let Some((unit, _route)) = &self.route {
+                let tile = &mut map[&unit];
+                let unit = tile.1.take();
+                map[&index].1 = Some(unit.unwrap());
+                self.route = None;
+                map.update_canvas();
+            } else if map[&index].1.is_some() {
+                self.route = Some((index, None));
+            }
+        }
+    }
 }
 
 impl Drawable for Path {
     fn draw_on_canvas(&self, mut canvas: &mut Canvas) {
-        if let Some(route) = &self.route {
+        if let Some((start, Some(route))) = &self.route {
             let canvas_width = canvas.get_width();
             let canvas_height = canvas.get_height();
             let context = canvas.get_2d_canvas_rendering_context();
             context.begin_path();
 
-            let (x, y) = self.start.get_canvas_coords();
+            let (x, y) = start.get_canvas_coords();
             let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), x as isize + 128, y as isize + 256);
             context.move_to(x as f64, y as f64);
 

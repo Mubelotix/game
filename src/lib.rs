@@ -42,7 +42,6 @@ pub async fn start() -> Result<(), JsValue> {
     let (mut width, mut height) = (window.get_width(), window.get_height());
     let mut map = Map::new([&t[0], &t[1], &t[2], &t[3], &t[4], &t[5], &t[6], &t[7], &t[8], &t[9], &t[10], &t[11], &t[12], &t[13], &t[14], &t[15], &t[16]], (width as usize, height as usize));
     let mut path = Path::new();
-    let mut selected_unit: Option<HexIndex> = None;
     map[&3.try_into().unwrap()].1 = Some(Unit::new(UnitType::Archer));
     map[&6.try_into().unwrap()].1 = Some(Unit::new(UnitType::Scout));
     map[&34.try_into().unwrap()].1 = Some(Unit::new(UnitType::Knight));
@@ -77,34 +76,10 @@ pub async fn start() -> Result<(), JsValue> {
                 }
                 Event::MouseEvent(me) => match me {
                     MouseEvent::Move(x, y) => {
-                        let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
-                        if let Some(index) = HexIndex::from_canvas_coords(coords) {
-                            if let Some(selected_unit_idx) = selected_unit {
-                                if let Some(route) = find_route(&map, selected_unit_idx, index) {
-                                    path.start = selected_unit_idx;
-                                    path.route = Some(route);
-                                } else {
-                                    path.route = None;
-                                }
-                            }
-                        } else {
-                            path.route = None;
-                        }
+                        path.handle_mouse_move(&map, x, y);
                     }
                     MouseEvent::Click(x, y) => {
-                        let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
-                        if let Some(index) = HexIndex::from_canvas_coords(coords) {
-                            if let Some(selected_unit_idx) = &selected_unit {
-                                let tile = &mut map[&selected_unit_idx];
-                                let unit = tile.1.take();
-                                map[&index].1 = Some(unit.unwrap());
-                                selected_unit = None;
-                                path.route = None;
-                                map.update_canvas();
-                            } else if selected_unit.is_none() && map[&index].1.is_some() {
-                                selected_unit = Some(index);
-                            }
-                        }
+                        path.handle_mouse_click(&mut map, x, y);
                     }
                     _ => (),
                 }

@@ -59,7 +59,7 @@ fn line_lenght(y: usize) -> usize {
     }
 }
 
-fn idx_to_coords(idx: usize) -> (usize, usize) {
+/*fn idx_to_coords(idx: usize) -> (usize, usize) {
     (idx_to_x(idx), idx_to_y(idx))
 }
 
@@ -78,13 +78,14 @@ fn coords_to_idx(x: usize, y: usize) -> usize {
     } + x;
     assert!(x < line_lenght(y));
     index
-}
+}*/
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct HexIndex {
     pos: (usize, usize, usize), // (x, y, index)
 }
 
+#[allow(dead_code)]
 impl HexIndex {
     pub fn get_index(&self) -> usize {
         self.pos.2
