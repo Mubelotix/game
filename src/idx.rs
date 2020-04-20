@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 fn idx_to_y(idx: usize) -> usize {
     if idx < 5 {
         0
@@ -78,7 +80,7 @@ fn coords_to_idx(x: usize, y: usize) -> usize {
     index
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct HexIndex {
     pos: (usize, usize, usize), // (x, y, index)
 }
@@ -224,6 +226,22 @@ impl HexIndex {
         let x = canvas_coords.0 + offset;
         let y = canvas_coords.1;
         (x, y)
+    }
+
+    pub fn from_canvas_coords(mut coords: (isize, isize)) -> Option<HexIndex> {
+        coords.1 -= 160;
+        coords.1 -= coords.1 % 193;
+        coords.1 /= 193;
+        coords.0 -= match coords.1 {
+            0 | 8 => 506,
+            1 | 7 => 380,
+            2 | 6 => 253,
+            3 | 5 => 127,
+            _ => 0
+        };
+        coords.0-= coords.0 % 253;
+        coords.0 /= 253;
+        (coords.0 as usize, coords.1 as usize).try_into().ok()
     }
 }
 

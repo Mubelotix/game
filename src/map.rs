@@ -204,16 +204,16 @@ impl<'a> Drawable for Map<'a> {
     }
 }
 
-impl<'a> std::ops::Index<HexIndex> for Map<'a> {
+impl<'a> std::ops::Index<&HexIndex> for Map<'a> {
     type Output = (Tile, Option<Unit>);
 
-    fn index(&self, index: HexIndex) -> &Self::Output {
+    fn index(&self, index: &HexIndex) -> &Self::Output {
         &self.tiles[index.get_index()]
     }
 }
 
-impl<'a> std::ops::IndexMut<HexIndex> for Map<'a> {
-    fn index_mut(&mut self, index: HexIndex) -> &mut Self::Output {
+impl<'a> std::ops::IndexMut<&HexIndex> for Map<'a> {
+    fn index_mut(&mut self, index: &HexIndex) -> &mut Self::Output {
         &mut self.tiles[index.get_index()]
     }
 }

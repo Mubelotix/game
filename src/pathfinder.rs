@@ -1,49 +1,48 @@
 use crate::{idx::HexIndex, map::*, units::Unit};
-use wasm_game_lib::graphics::{drawable::*, canvas::*};
+use wasm_game_lib::graphics::{drawable::*, canvas::*, color::Color};
 use std::convert::TryInto;
 
 pub fn find_route(map: &Map, starting_point: HexIndex, arrival_point: HexIndex) -> Option<Vec<HexIndex>> {
     let mut travel_time: [Option<usize>; 61] = [None; 61];
     travel_time[starting_point.get_index()] = Some(0);
-    let mut paths: Vec<HexIndex> = vec![starting_point.clone()];
+    let mut paths: Vec<HexIndex> = vec![starting_point];
 
     while !paths.is_empty() && travel_time[arrival_point.get_index()].is_none() {
         let this_path = paths.remove(0);
         let travel_time_to_here = travel_time[this_path.get_index()].unwrap();
 
-        // TODO obstacles
         if let Some(path) = this_path.get_right_neighbour() {
-            if travel_time[path.get_index()].is_none() {
+            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
                 travel_time[path.get_index()] = Some(travel_time_to_here + 1);
                 paths.push(path);
             }
         }
         if let Some(path) = this_path.get_left_neighbour() {
-            if travel_time[path.get_index()].is_none() {
+            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
                 travel_time[path.get_index()] = Some(travel_time_to_here + 1);
                 paths.push(path);
             }
         }
         if let Some(path) = this_path.get_top_right_neighbour() {
-            if travel_time[path.get_index()].is_none() {
+            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
                 travel_time[path.get_index()] = Some(travel_time_to_here + 1);
                 paths.push(path);
             }
         }
         if let Some(path) = this_path.get_top_left_neighbour() {
-            if travel_time[path.get_index()].is_none() {
+            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
                 travel_time[path.get_index()] = Some(travel_time_to_here + 1);
                 paths.push(path);
             }
         }
         if let Some(path) = this_path.get_bottom_right_neighbour() {
-            if travel_time[path.get_index()].is_none() {
+            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
                 travel_time[path.get_index()] = Some(travel_time_to_here + 1);
                 paths.push(path);
             }
         }
         if let Some(path) = this_path.get_bottom_left_neighbour() {
-            if travel_time[path.get_index()].is_none() {
+            if travel_time[path.get_index()].is_none() && map[&path].1.is_none() {
                 travel_time[path.get_index()] = Some(travel_time_to_here + 1);
                 paths.push(path);
             }
@@ -86,7 +85,12 @@ impl Path {
     pub fn new() -> Path {
         Path {
             start: 0.try_into().unwrap(),
-            line_style: LineStyle::default(),
+            line_style: LineStyle {
+                cap: LineCap::Round,
+                color: Color::new(66, 135, 245),
+                join: LineJoin::Round,
+                size: 14.0,
+            },
             route: None
         }
     }

@@ -1,3 +1,4 @@
+#[derive(PartialEq)]
 pub enum UnitType {
     Archer,
     Knight,
@@ -16,6 +17,7 @@ impl UnitType {
     }
 }
 
+#[derive(PartialEq)]
 pub struct Unit {
     pub unit_type: UnitType,
 }

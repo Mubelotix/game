@@ -26,6 +26,7 @@ use map::*;
 mod units;
 use units::*;
 mod idx;
+use idx::*;
 mod pathfinder;
 use pathfinder::*;
 
@@ -41,16 +42,11 @@ pub async fn start() -> Result<(), JsValue> {
     let (mut width, mut height) = (window.get_width(), window.get_height());
     let mut map = Map::new([&t[0], &t[1], &t[2], &t[3], &t[4], &t[5], &t[6], &t[7], &t[8], &t[9], &t[10], &t[11], &t[12], &t[13], &t[14], &t[15], &t[16]], (width as usize, height as usize));
     let mut path = Path::new();
-    path.line_style = LineStyle {
-        cap: LineCap::Round,
-        color: Color::new(66, 135, 245),
-        join: LineJoin::Round,
-        size: 14.0,
-    };
-    map[3.try_into().unwrap()].1 = Some(Unit::new(UnitType::Archer));
-    map[6.try_into().unwrap()].1 = Some(Unit::new(UnitType::Scout));
-    map[34.try_into().unwrap()].1 = Some(Unit::new(UnitType::Knight));
-    map[29.try_into().unwrap()].1 = Some(Unit::new(UnitType::Barbarian));
+    let mut selected_unit: Option<HexIndex> = None;
+    map[&3.try_into().unwrap()].1 = Some(Unit::new(UnitType::Archer));
+    map[&6.try_into().unwrap()].1 = Some(Unit::new(UnitType::Scout));
+    map[&34.try_into().unwrap()].1 = Some(Unit::new(UnitType::Knight));
+    map[&29.try_into().unwrap()].1 = Some(Unit::new(UnitType::Barbarian));
     map.update_canvas();
 
     loop {
@@ -81,27 +77,33 @@ pub async fn start() -> Result<(), JsValue> {
                 }
                 Event::MouseEvent(me) => match me {
                     MouseEvent::Move(x, y) => {
-                        let mut coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
-                        coords.1 -= 160;
-                        coords.1 -= coords.1 % 193;
-                        coords.1 /= 193;
-                        coords.0 -= match coords.1 {
-                            0 | 8 => 506,
-                            1 | 7 => 380,
-                            2 | 6 => 253,
-                            3 | 5 => 127,
-                            _ => 0
-                        };
-                        coords.0-= coords.0 % 253;
-                        coords.0 /= 253;
-                        if let Ok(index) = (coords.0 as usize, coords.1 as usize).try_into() {
-                            if let Some(route) = find_route(&map, 0.try_into().unwrap(), index) {
-                                path.route = Some(route);
-                            } else {
-                                path.route = None;
+                        let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
+                        if let Some(index) = HexIndex::from_canvas_coords(coords) {
+                            if let Some(selected_unit_idx) = selected_unit {
+                                if let Some(route) = find_route(&map, selected_unit_idx, index) {
+                                    path.start = selected_unit_idx;
+                                    path.route = Some(route);
+                                } else {
+                                    path.route = None;
+                                }
                             }
                         } else {
                             path.route = None;
+                        }
+                    }
+                    MouseEvent::Click(x, y) => {
+                        let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
+                        if let Some(index) = HexIndex::from_canvas_coords(coords) {
+                            if let Some(selected_unit_idx) = &selected_unit {
+                                let tile = &mut map[&selected_unit_idx];
+                                let unit = tile.1.take();
+                                map[&index].1 = Some(unit.unwrap());
+                                selected_unit = None;
+                                path.route = None;
+                                map.update_canvas();
+                            } else if selected_unit.is_none() && map[&index].1.is_some() {
+                                selected_unit = Some(index);
+                            }
                         }
                     }
                     _ => (),
