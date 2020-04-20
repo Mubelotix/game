@@ -96,7 +96,7 @@ impl Path {
     pub fn handle_mouse_move(&mut self, map: &Map, x: u32, y: u32) {
         if let Some((unit, route)) = &mut self.route {
             let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
-            if let Some(index) = HexIndex::from_canvas_coords(coords) {
+            if let Some(index) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
                 *route = find_route(&map, *unit, index)
             } else {
                 *route = None;
@@ -106,15 +106,17 @@ impl Path {
 
     pub fn handle_mouse_click(&mut self, map: &mut Map, x: u32, y: u32) {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
-        if let Some(index) = HexIndex::from_canvas_coords(coords) {
-            if let Some((unit, _route)) = &self.route {
-                let tile = &mut map[&unit];
-                let unit = tile.1.take();
-                map[&index].1 = Some(unit.unwrap());
-                self.route = None;
-                map.update_canvas();
-            } else if map[&index].1.is_some() {
-                self.route = Some((index, None));
+        if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
+            if let Some((selected_unit_idx, route)) = &self.route { // if a unit is selected
+                if map[&clicked_tile_idx].1.is_none() && route.is_some() {
+                    let selected_unit_tile = &mut map[&selected_unit_idx];
+                    let selected_unit = selected_unit_tile.1.take().unwrap();
+                    map[&clicked_tile_idx].1 = Some(selected_unit);
+                    self.route = None;
+                    map.update_canvas();
+                }
+            } else if map[&clicked_tile_idx].1.is_some() { // if no unit is selected but a unit has been clicked
+                self.route = Some((clicked_tile_idx, None));
             }
         }
     }
