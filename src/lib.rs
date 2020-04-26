@@ -37,7 +37,6 @@ pub async fn start() -> Result<(), JsValue> {
     let mut arrows = (false, false, false, false);
     let (mut width, mut height) = (window.get_width(), window.get_height());
     let mut map = Map::new([&t[0], &t[1], &t[2], &t[3], &t[4], &t[5], &t[6], &t[7], &t[8], &t[9], &t[10], &t[11], &t[12], &t[13], &t[14], &t[15], &t[16]], (width as usize, height as usize), margin);
-    let mut path = Path::new(margin);
     let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]], margin);
     let arial = Font::arial();
     let next_turn_button = Button::new((10.0, 10.0), None, &arial, String::from("Next turn"));
@@ -74,17 +73,16 @@ pub async fn start() -> Result<(), JsValue> {
                     canvas.set_height(height);
                     margin = canvas.get_width() as usize / 5;
                     map.margin = margin;
-                    units.margin = margin;
-                    path.margin = margin;
+                    units.set_margin(margin);
                     test.set_width(margin - 20);
                     map.dimensions = (width as usize, height as usize)
                 }
                 Event::MouseEvent(me) => match me {
                     MouseEvent::Move(x, y) => {
-                        path.handle_mouse_move(&map, &units, x, y);
+                        units.handle_mouse_move(&map, x, y);
                     }
                     MouseEvent::Click(x, y) => {
-                        path.handle_mouse_click(&map, &mut units, x, y);
+                        units.handle_mouse_click(&map, x, y);
                     }
                     _ => (),
                 }
@@ -99,7 +97,6 @@ pub async fn start() -> Result<(), JsValue> {
 
         canvas.clear_with_black();
         canvas.draw(&map);
-        canvas.draw(&path);
         canvas.draw(&units);
         canvas.draw(&next_turn_button);
         canvas.draw(&test);

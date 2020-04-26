@@ -2,7 +2,7 @@ use crate::{idx::HexIndex, map::*, units::*};
 use wasm_game_lib::graphics::{drawable::*, canvas::*, color::Color};
 use std::convert::TryInto;
 
-pub fn find_route(map: &Map, units: &Units, starting_point: HexIndex, arrival_point: HexIndex, max_moves: usize) -> Option<Vec<HexIndex>> {
+pub fn find_route(units: &Units, map: &Map, starting_point: HexIndex, arrival_point: HexIndex, max_moves: usize) -> Option<Vec<HexIndex>> {
     let mut travel_time: [Option<usize>; 61] = [None; 61];
     travel_time[starting_point.get_index()] = Some(0);
     let mut paths: Vec<HexIndex> = vec![starting_point];
@@ -74,79 +74,6 @@ pub fn find_route(map: &Map, units: &Units, starting_point: HexIndex, arrival_po
         Some(full_path)
     } else {
         None
-    }
-}
-
-pub struct Path {
-    line_style: LineStyle,
-    route: Option<(HexIndex, Option<Vec<HexIndex>>)>,
-    pub margin: usize,
-}
-
-impl Path {
-    pub fn new(margin: usize) -> Path {
-        Path {
-            line_style: LineStyle {
-                cap: LineCap::Round,
-                color: Color::new(66, 135, 245),
-                join: LineJoin::Round,
-                size: 14.0,
-            },
-            route: None,
-            margin,
-        }
-    }
-
-    pub fn handle_mouse_move(&mut self, map: &Map, units: &Units, x: u32, y: u32) {
-        if let Some((unit, route)) = &mut self.route {
-            let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
-            if let Some(index) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
-                *route = find_route(&map, &units, *unit, index, units.get(unit).as_ref().unwrap().get_remaining_moves())
-            } else {
-                *route = None;
-            }
-        }
-    }
-
-    pub fn handle_mouse_click(&mut self, map: &Map, units: &mut Units, x: u32, y: u32) {
-        let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
-        if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
-            if let Some((selected_unit_idx, route)) = &self.route { // if a unit is selected
-                if units.get(&clicked_tile_idx).is_none() && route.is_some() {
-                    let selected_unit = units.get_mut(&selected_unit_idx).take().unwrap();
-                    units.set(&clicked_tile_idx, Some(selected_unit));
-                    self.route = None;
-                }
-            } else if units.get(&clicked_tile_idx).is_some() { // if no unit is selected but a unit has been clicked
-                self.route = Some((clicked_tile_idx, None));
-            }
-        }
-    }
-}
-
-impl Drawable for Path {
-    fn draw_on_canvas(&self, mut canvas: &mut Canvas) {
-        if let Some((start, Some(route))) = &self.route {
-            let canvas_width = canvas.get_width();
-            let canvas_height = canvas.get_height();
-            let context = canvas.get_2d_canvas_rendering_context();
-            context.begin_path();
-
-            let (x, y) = start.get_canvas_coords();
-            let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
-            context.move_to(x as f64, y as f64);
-
-            for tile in route {
-                let (x, y) = tile.get_canvas_coords();
-                let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
-
-                context.line_to(x as f64, y as f64);
-            }
-
-            self.line_style.apply_on_canvas(&mut canvas);
-            
-            canvas.get_2d_canvas_rendering_context().stroke();
-        }
     }
 }
 
