@@ -43,13 +43,7 @@ impl<'a> Button<'a> {
         let mouse_position = (mouse_position.0 as f64, mouse_position.1 as f64);
         let width = self.width.borrow().unwrap();
 
-        if mouse_position.0 > self.coords.0 && mouse_position.0 < self.coords.0 + width && mouse_position.1 > self.coords.1 && mouse_position.1 < self.coords.1 + 50.0 {
-            if is_mouse_pressed() {
-                return true;
-            }
-        }
-
-        return false;
+        mouse_position.0 > self.coords.0 && mouse_position.0 < self.coords.0 + width && mouse_position.1 > self.coords.1 && mouse_position.1 < self.coords.1 + 50.0 && is_mouse_pressed()
     }
 }
 

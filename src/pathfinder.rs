@@ -2,7 +2,7 @@ use crate::{idx::HexIndex, map::*, units::*};
 use wasm_game_lib::graphics::{drawable::*, canvas::*, color::Color};
 use std::convert::TryInto;
 
-pub fn find_route(units: &Units, map: &Map, starting_point: HexIndex, arrival_point: HexIndex, max_moves: usize) -> Option<Vec<HexIndex>> {
+pub fn find_route(units: &Units, _map: &Map, starting_point: HexIndex, arrival_point: HexIndex, max_moves: usize) -> Option<Vec<HexIndex>> {
     let mut travel_time: [Option<usize>; 61] = [None; 61];
     travel_time[starting_point.get_index()] = Some(0);
     let mut paths: Vec<HexIndex> = vec![starting_point];
