@@ -77,12 +77,13 @@ pub struct Map<'a> {
     tiles: [Tile; 61],
     textures: [&'a Image; TEXTURES_NUMBER],
     canvas: Canvas,
-    pub dimensions: (usize, usize)
+    pub dimensions: (usize, usize),
+    pub margin: usize,
 }
 
 impl<'a> Map<'a> {
     #[allow(clippy::cognitive_complexity)]
-    pub fn new(textures: [&'a Image; TEXTURES_NUMBER], dimensions: (usize, usize)) -> Map {
+    pub fn new(textures: [&'a Image; TEXTURES_NUMBER], dimensions: (usize, usize), margin: usize) -> Map {
         let mut canvas = Canvas::new();
         canvas.set_width(CANVAS_WIDTH as u32);
         canvas.set_height(CANVAS_HEIGHT as u32);
@@ -101,7 +102,8 @@ impl<'a> Map<'a> {
             tiles,
             textures,
             canvas,
-            dimensions
+            dimensions,
+            margin,
         };
 
         map.update_canvas();
@@ -131,7 +133,8 @@ impl<'a> Map<'a> {
     }
 
     pub fn screen_coords_to_internal_canvas_coords(&self, x: usize, y: usize) -> (isize, isize) {
-        let factor_width: f64 = self.dimensions.0 as f64 / CANVAS_WIDTH;
+        let x = x as isize - self.margin as isize;
+        let factor_width: f64 = (self.dimensions.0 - self.margin) as f64 / CANVAS_WIDTH;
         let factor_height = self.dimensions.1 as f64 / CANVAS_HEIGHT;
         let smaller_factor = if factor_width < factor_height {
             factor_width
@@ -140,13 +143,13 @@ impl<'a> Map<'a> {
         };
         let fitting_width = CANVAS_WIDTH * smaller_factor;
         let fitting_height = CANVAS_HEIGHT * smaller_factor;
-        let remaining_width = self.dimensions.0 as f64 - fitting_width;
+        let remaining_width = (self.dimensions.0 - self.margin) as f64 - fitting_width;
         let remaining_height = self.dimensions.1 as f64 - fitting_height;
         (((x as f64 - remaining_width / 2.0) / smaller_factor) as isize, ((y as f64 - remaining_height / 2.0) / smaller_factor) as isize)
     }
 
-    pub fn internal_coords_to_screen_coords(dimensions: (u32, u32), x: isize, y: isize) -> (usize, usize) {
-        let factor_width: f64 = dimensions.0 as f64 / CANVAS_WIDTH;
+    pub fn internal_coords_to_screen_coords(dimensions: (u32, u32), margin: usize, x: isize, y: isize) -> (usize, usize) {
+        let factor_width: f64 = (dimensions.0 as usize - margin) as f64 / CANVAS_WIDTH;
         let factor_height = dimensions.1 as f64 / CANVAS_HEIGHT;
         let smaller_factor = if factor_width < factor_height {
             factor_width
@@ -155,7 +158,7 @@ impl<'a> Map<'a> {
         };
         let fitting_width = CANVAS_WIDTH * smaller_factor;
         let fitting_height = CANVAS_HEIGHT * smaller_factor;
-        let remaining_width = dimensions.0 as f64 - fitting_width;
+        let remaining_width = (dimensions.0 as usize - margin) as f64 - fitting_width;
         let remaining_height = dimensions.1 as f64 - fitting_height;
 
         let mut x = x as f64 * smaller_factor;
@@ -163,13 +166,13 @@ impl<'a> Map<'a> {
         let mut y = y as f64 * smaller_factor;
         y += remaining_height/2.0;
 
-        (x as usize, y as usize)
+        (x as usize + margin, y as usize)
     }
 }
 
 impl<'a> Drawable for Map<'a> {
     fn draw_on_canvas(&self, canvas: &mut Canvas) {
-        let factor_width: f64 = self.dimensions.0 as f64 / CANVAS_WIDTH;
+        let factor_width: f64 = (self.dimensions.0 - self.margin) as f64 / CANVAS_WIDTH;
         let factor_height = self.dimensions.1 as f64 / CANVAS_HEIGHT;
         let smaller_factor = if factor_width < factor_height {
             factor_width
@@ -178,11 +181,11 @@ impl<'a> Drawable for Map<'a> {
         };
         let fitting_width = CANVAS_WIDTH * smaller_factor;
         let fitting_height = CANVAS_HEIGHT * smaller_factor;
-        let remaining_width = self.dimensions.0 as f64 - fitting_width;
+        let remaining_width = (self.dimensions.0 - self.margin) as f64 - fitting_width;
         let remaining_height = self.dimensions.1 as f64 - fitting_height;
 
         let canvas_element = canvas.get_2d_canvas_rendering_context();
-        canvas_element.draw_image_with_html_canvas_element_and_dw_and_dh(self.canvas.get_canvas_element(), self.coords.0 as f64 + remaining_width / 2.0, self.coords.1 as f64 + remaining_height / 2.0, fitting_width, fitting_height).unwrap();
+        canvas_element.draw_image_with_html_canvas_element_and_dw_and_dh(self.canvas.get_canvas_element(), self.coords.0 as f64 + remaining_width / 2.0 + self.margin as f64, self.coords.1 as f64 + remaining_height / 2.0, fitting_width, fitting_height).unwrap();
     }
 }
 

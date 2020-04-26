@@ -52,14 +52,16 @@ impl Unit {
 
 pub struct Units<'a> {
     units: [Option<Unit>; 61],
-    textures: [&'a Image; 4]
+    textures: [&'a Image; 4],
+    pub margin: usize,
 }
 
 impl<'a> Units<'a> {
-    pub fn new(textures: [&'a Image; 4]) -> Units {
+    pub fn new(textures: [&'a Image; 4], margin: usize) -> Units {
         Units {
             units: arr!(None;61),
-            textures
+            textures,
+            margin,
         }
     }
 
@@ -107,7 +109,7 @@ impl<'a> Drawable for Units<'a> {
             let unit = unit.as_ref().unwrap();
             let coords: HexIndex = idx.try_into().unwrap();
             let coords = coords.get_canvas_coords();
-            let coords = Map::internal_coords_to_screen_coords(dimensions, coords.0 as isize + 50, coords.1 as isize + 160);
+            let coords = Map::internal_coords_to_screen_coords(dimensions, self.margin, coords.0 as isize + 50, coords.1 as isize + 160);
 
             context.draw_image_with_html_image_element_and_dw_and_dh(self.textures[unit.unit_type.get_texture_idx()].get_html_element(), coords.0 as f64, coords.1 as f64, 150.0 * factor, 150.0 * factor).unwrap();
         }

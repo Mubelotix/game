@@ -80,10 +80,11 @@ pub fn find_route(map: &Map, units: &Units, starting_point: HexIndex, arrival_po
 pub struct Path {
     line_style: LineStyle,
     route: Option<(HexIndex, Option<Vec<HexIndex>>)>,
+    pub margin: usize,
 }
 
 impl Path {
-    pub fn new() -> Path {
+    pub fn new(margin: usize) -> Path {
         Path {
             line_style: LineStyle {
                 cap: LineCap::Round,
@@ -91,7 +92,8 @@ impl Path {
                 join: LineJoin::Round,
                 size: 14.0,
             },
-            route: None
+            route: None,
+            margin,
         }
     }
 
@@ -131,12 +133,12 @@ impl Drawable for Path {
             context.begin_path();
 
             let (x, y) = start.get_canvas_coords();
-            let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), x as isize + 128, y as isize + 256);
+            let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
             context.move_to(x as f64, y as f64);
 
             for tile in route {
                 let (x, y) = tile.get_canvas_coords();
-                let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), x as isize + 128, y as isize + 256);
+                let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
 
                 context.line_to(x as f64, y as f64);
             }
