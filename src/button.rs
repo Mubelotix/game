@@ -8,8 +8,8 @@ use wasm_game_lib::inputs::mouse::{get_mouse_position, is_mouse_pressed};
 use std::cell::RefCell;
 
 const BUTTON_STYLE: LineStyle = LineStyle {
-    cap: LineCap::Butt,
-    join: LineJoin::Bevel,
+    cap: LineCap::Round,
+    join: LineJoin::Round,
     size: 4.0,
     color: Color {
         alpha: 255,

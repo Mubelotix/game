@@ -15,13 +15,14 @@ use wasm_game_lib::system::sleep;
 use std::time::Duration;
 use std::convert::TryInto;
 use web_sys;
-mod loader; mod map; mod random; mod units; mod pathfinder; mod button; mod idx; mod progress_bar;
+mod loader; mod map; mod random; mod units; mod pathfinder; mod button; mod idx; mod progress_bar; mod textbox;
 use loader::load_images;
 use map::*;
 use units::*;
 use idx::*;
 use pathfinder::*;
 use button::*;
+use textbox::*;
 
 #[allow(clippy::single_match)]
 #[wasm_bindgen(start)]
@@ -39,7 +40,8 @@ pub async fn start() -> Result<(), JsValue> {
     let mut path = Path::new(margin);
     let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]], margin);
     let arial = Font::arial();
-    let mut next_turn_button = Button::new((10.0, 10.0), None, &arial, String::from("Next turn"));
+    let next_turn_button = Button::new((10.0, 10.0), None, &arial, String::from("Next turn"));
+    let mut test = TextBox::new((10.0, 200.0), margin - 20, &arial, "Ceci est un test qui va sans doute ne pas très bien marcher");
     
     units.set(&3.try_into().unwrap(), Some(Unit::new(UnitType::Archer)));
     units.set(&4.try_into().unwrap(), Some(Unit::new(UnitType::Scout)));
@@ -74,6 +76,7 @@ pub async fn start() -> Result<(), JsValue> {
                     map.margin = margin;
                     units.margin = margin;
                     path.margin = margin;
+                    test.set_width(margin - 20);
                     map.dimensions = (width as usize, height as usize)
                 }
                 Event::MouseEvent(me) => match me {
@@ -99,6 +102,7 @@ pub async fn start() -> Result<(), JsValue> {
         canvas.draw(&path);
         canvas.draw(&units);
         canvas.draw(&next_turn_button);
+        canvas.draw(&test);
 
         sleep(Duration::from_millis(16)).await;
     }
