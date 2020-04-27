@@ -58,7 +58,7 @@ impl<'a> Drawable for TextBox<'a> {
         let width = *self.width.borrow() as f64;
 
         while self.displayed_message.borrow().0 < self.full_message.len() {
-            if self.displayed_text.borrow().get_width(&mut canvas) + MARGIN as f64 * 2.0 < width {
+            if self.displayed_text.borrow().get_width(&mut canvas) <= width - MARGIN as f64 * 2.0 {
                 let (words, end_line) = &mut *self.displayed_message.borrow_mut();
                 *words += 1;
                 let mut displayed_message = String::new();
@@ -73,6 +73,22 @@ impl<'a> Drawable for TextBox<'a> {
                     }
                 }
                 self.displayed_text.borrow_mut().set_text(displayed_message);
+
+                if *words == self.full_message.len() && self.displayed_text.borrow().get_width(&mut canvas) > width - MARGIN as f64 * 2.0 {
+                    end_line.push(*words - 2);
+                    let mut displayed_message = String::new();
+                    for (idx, word) in self.full_message.iter().enumerate() {
+                        if idx < *words {
+                            displayed_message.push_str(word);
+                            if end_line.contains(&idx) {
+                                displayed_message.push('\n');
+                            } else {
+                                displayed_message.push(' ');
+                            }
+                        }
+                    }
+                    self.displayed_text.borrow_mut().set_text(displayed_message);
+                }
             } else {
                 let (words, end_line) = &mut *self.displayed_message.borrow_mut();
                 end_line.push(*words - 2);
