@@ -34,7 +34,7 @@ impl UnitType {
 #[derive(PartialEq)]
 pub struct Unit {
     pub unit_type: UnitType,
-    remaining_moves: usize,
+    pub remaining_moves: usize,
     pub attacks: (Attack, Attack),
 }
 
@@ -179,9 +179,10 @@ impl<'a> Units<'a> {
     pub fn handle_mouse_click(&mut self, map: &Map, x: u32, y: u32, arial: &'a Font, mut canvas: &mut Canvas) {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
         if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
-            if let Some((selected_unit_idx, route, _reachable, _attacks)) = &self.selected_unit { // if a unit is selected
+            if let Some((selected_unit_idx, route, reachable, _attacks)) = &self.selected_unit { // if a unit is selected
                 if self.get(&clicked_tile_idx).is_none() && route.is_some() {
-                    let selected_unit = self.units[selected_unit_idx.get_index()].take().unwrap();
+                    let mut selected_unit = self.units[selected_unit_idx.get_index()].take().unwrap();
+                    selected_unit.remaining_moves -= reachable[clicked_tile_idx.get_index()].unwrap();
                     self.set(&clicked_tile_idx, Some(selected_unit));
                     self.selected_unit = None;
                 }
