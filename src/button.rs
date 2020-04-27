@@ -64,9 +64,9 @@ impl<'a> Drawable for Button<'a> {
         
         if mouse_position.0 > self.coords.0 && mouse_position.0 < self.coords.0 + width && mouse_position.1 > self.coords.1 && mouse_position.1 < self.coords.1 + 50.0 {
             if is_mouse_pressed() {
-                context.set_fill_style(&JsValue::from_str("green"));
+                context.set_fill_style(&JsValue::from_str("rgb(44, 48, 79)"));
             } else {
-                context.set_fill_style(&JsValue::from_str("cyan"));
+                context.set_fill_style(&JsValue::from_str("rgb(34, 38, 59)"));
             }
         } else {
             context.set_fill_style(&JsValue::from_str("rgb(24, 28, 39)"));

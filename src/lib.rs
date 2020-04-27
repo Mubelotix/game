@@ -38,13 +38,13 @@ pub async fn start() -> Result<(), JsValue> {
     start_recording_mouse_events();
 
     let (mut window, mut canvas) = Window::init_with_events(KEYBOARD_EVENT + RESIZE_EVENT + MOUSE_EVENT);
-    let t = load_images(vec!["textures/plains/grassy_plain1", "textures/plains/grassy_plain2", "textures/plains/grassy_plain3", "textures/plains/grassy_plain4", "textures/forest/forest1", "textures/forest/forest2", "textures/forest/forest3", "textures/forest/forest4", "textures/plains/plain1", "textures/plains/plain2", "textures/plains/plain3", "textures/plains/plain4", "textures/underground/dirt", "units/archer.png", "units/knight.png", "units/scout.png", "units/barbarian.png", "textures/green.png"], &mut canvas).await;
+    let t = load_images(vec!["textures/plains/grassy_plain1", "textures/plains/grassy_plain2", "textures/plains/grassy_plain3", "textures/plains/grassy_plain4", "textures/forest/forest1", "textures/forest/forest2", "textures/forest/forest3", "textures/forest/forest4", "textures/plains/plain1", "textures/plains/plain2", "textures/plains/plain3", "textures/plains/plain4", "textures/underground/dirt", "units/archer.png", "units/knight.png", "units/scout.png", "units/barbarian.png", "textures/green.png", "textures/yellow.png"], &mut canvas).await;
 
     let mut margin = canvas.get_width() as usize / 5;
     let mut arrows = (false, false, false, false);
     let (mut width, mut height) = (window.get_width(), window.get_height());
     let mut map = Map::new([&t[0], &t[1], &t[2], &t[3], &t[4], &t[5], &t[6], &t[7], &t[8], &t[9], &t[10], &t[11], &t[12], &t[13], &t[14], &t[15], &t[16]], (width as usize, height as usize), margin);
-    let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]], &t[17], margin);
+    let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]], [&t[17], &t[18]], margin);
     let arial = Font::arial();
     let next_turn_button = Button::new((10.0, 10.0), None, &arial, String::from("Next turn"));
     

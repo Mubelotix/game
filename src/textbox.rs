@@ -115,6 +115,18 @@ impl<'a> TextBox<'a> {
         self.coords.1 = y as f64;
         self.displayed_text.borrow_mut().coords.1 = y + MARGIN + FONT_SIZE / 2;
     }
+
+    pub fn is_hover(&self) -> bool {
+        let mouse_position = get_mouse_position();
+        let mouse_position = (mouse_position.0 as f64, mouse_position.1 as f64);
+        let width = *self.width.borrow() as f64;
+
+        mouse_position.0 > self.coords.0 && mouse_position.0 < self.coords.0 + width && mouse_position.1 > self.coords.1 && mouse_position.1 < self.coords.1 + self.get_height() as f64
+    }
+
+    pub fn is_pressed(&self) -> bool {
+        self.is_hover() && is_mouse_pressed()
+    }
 }
 
 impl<'a> Drawable for TextBox<'a> {
@@ -128,7 +140,15 @@ impl<'a> Drawable for TextBox<'a> {
         context.begin_path();
         context.stroke_rect(self.coords.0, self.coords.1, width, self.displayed_text.borrow().get_height() as f64 + FONT_SIZE as f64 / 2.0);
 
-        context.set_fill_style(&JsValue::from_str("rgb(24, 28, 39)"));
+        if self.is_hover() {
+            if self.is_pressed() {
+                context.set_fill_style(&JsValue::from_str("rgb(54, 58, 99)"));
+            } else {
+                context.set_fill_style(&JsValue::from_str("rgb(44, 48, 79)"));
+            }
+        } else {
+            context.set_fill_style(&JsValue::from_str("rgb(24, 28, 39)"));
+        }
 
         context.fill_rect(self.coords.0, self.coords.1, width, self.displayed_text.borrow().get_height() as f64 + FONT_SIZE as f64 / 2.0);
         context.stroke();

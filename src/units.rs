@@ -102,7 +102,7 @@ impl Attack {
         }
     }
 
-    pub fn get_name(&self) -> &str {
+    pub fn get_name(&self) -> &'static str {
         match self {
             Attack::StickKnock => "Stick Knock",
             Attack::VolleyOfArrows => "Volley of Arrows",
@@ -130,26 +130,50 @@ impl Attack {
             }
         }
     }
+
+    pub fn get_potential_targets(&self, map: &Map, position: &HexIndex) -> Vec<HexIndex> {
+        let mut targets = Vec::new();
+
+        if let Some(index) = position.get_top_left_neighbour() {
+            targets.push(index);
+        }
+        if let Some(index) = position.get_top_right_neighbour() {
+            targets.push(index);
+        }
+        if let Some(index) = position.get_right_neighbour() {
+            targets.push(index);
+        }
+        if let Some(index) = position.get_bottom_right_neighbour() {
+            targets.push(index);
+        }
+        if let Some(index) = position.get_bottom_left_neighbour() {
+            targets.push(index);
+        }
+        if let Some(index) = position.get_left_neighbour() {
+            targets.push(index);
+        }
+        targets
+    }
 }
 
-type SelectedUnit<'a> = (HexIndex, Option<Vec<HexIndex>>, [Option<usize>; 61], (TextBox<'a>, TextBox<'a>));
+type SelectedUnit<'a> = (HexIndex, Option<Vec<HexIndex>>, [Option<usize>; 61], (TextBox<'a>, TextBox<'a>), Option<(bool, Vec<HexIndex>)>);
 
 pub struct Units<'a> {
     units: [Option<Unit>; 61],
     textures: [&'a Image; 4],
-    green: &'a Image,
+    overground: [&'a Image; 2],
     margin: usize,
     line_style: LineStyle,
     selected_unit: Option<SelectedUnit<'a>>,
 }
 
 impl<'a> Units<'a> {
-    pub fn new(textures: [&'a Image; 4], green: &'a Image, margin: usize) -> Units<'a> {
+    pub fn new(textures: [&'a Image; 4], overground: [&'a Image; 2], margin: usize) -> Units<'a> {
         Units {
             units: arr!(None;61),
             textures,
             margin,
-            green,
+            overground,
             line_style: LineStyle {
                 cap: LineCap::Round,
                 color: Color::new(66, 135, 245),
@@ -170,7 +194,7 @@ impl<'a> Units<'a> {
 
     pub fn set_margin(&mut self, margin: usize) {
         self.margin = margin;
-        if let Some((_, _, _, textboxes)) = &mut self.selected_unit {
+        if let Some((_, _, _, textboxes, _)) = &mut self.selected_unit {
             textboxes.0.set_width(margin - 20);
             textboxes.1.set_width(margin - 20);
         }
@@ -178,14 +202,14 @@ impl<'a> Units<'a> {
 
     pub fn handle_resize_event(&mut self, canvas: &mut Canvas) {
         let canvas_height = canvas.get_height() as usize;
-        if let Some((_, _, _, attacks)) = &mut self.selected_unit {
-            attacks.0.set_y(canvas_height - attacks.0.get_height());
-            attacks.1.set_y(canvas_height - attacks.0.get_height() - attacks.1.get_height());
+        if let Some((_, _, _, textboxes, _)) = &mut self.selected_unit {
+            textboxes.0.set_y(canvas_height - textboxes.0.get_height());
+            textboxes.1.set_y(canvas_height - textboxes.0.get_height() - textboxes.1.get_height());
         }
     }
 
     pub fn handle_mouse_move(&mut self, map: &Map, x: u32, y: u32) {
-        if let Some((unit, _route, _reachable, _attacks)) = &self.selected_unit {
+        if let Some((unit, _route, _reachable, _textboxes, _selected_action)) = &self.selected_unit {
             let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
             if let Some(index) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
                 self.selected_unit.as_mut().unwrap().1 = find_route(&self.selected_unit.as_ref().unwrap().2, *unit, index);
@@ -198,12 +222,15 @@ impl<'a> Units<'a> {
     pub fn handle_mouse_click(&mut self, map: &Map, x: u32, y: u32, arial: &'a Font, mut canvas: &mut Canvas) {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
         if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
-            if let Some((selected_unit_idx, route, reachable, _attacks)) = &self.selected_unit { // if a unit is selected
-                if (self.get(&clicked_tile_idx).is_none() || clicked_tile_idx == *selected_unit_idx) && route.is_some() {
+            if let Some((selected_unit_idx, route, reachable, textboxes, selected_action)) = &self.selected_unit { // if a unit is selected
+                if selected_action.is_none() && (self.get(&clicked_tile_idx).is_none() || clicked_tile_idx == *selected_unit_idx) && route.is_some() {
                     let mut selected_unit = self.units[selected_unit_idx.get_index()].take().unwrap();
                     selected_unit.remaining_moves -= reachable[clicked_tile_idx.get_index()].unwrap();
                     self.set(&clicked_tile_idx, Some(selected_unit));
                     self.selected_unit = None;
+                } else if let Some((action, targets)) = selected_action {
+                    log!("ACTION!");
+                    self.selected_unit.as_mut().unwrap().4 = None;
                 }
             } else if self.get(&clicked_tile_idx).is_some() { // if no unit is selected but a unit has been clicked
                 let canvas_height = canvas.get_height() as usize;
@@ -213,10 +240,19 @@ impl<'a> Units<'a> {
                 t2.init(&mut canvas);
                 t2.set_y(canvas_height - t2.get_height());
                 t1.set_y(canvas_height - t2.get_height() - t1.get_height());
-                self.selected_unit = Some((clicked_tile_idx, None, compute_travel_time(&self, &map, clicked_tile_idx, self[&clicked_tile_idx].get_remaining_moves()), (t1, t2)));
+                self.selected_unit = Some((clicked_tile_idx, None, compute_travel_time(&self, &map, clicked_tile_idx, self[&clicked_tile_idx].get_remaining_moves()), (t1, t2), None));
+            }
+        } else if let Some((selected_unit_idx, _, _, textboxes, _)) = &self.selected_unit {
+            // TODO correct delay
+            if textboxes.0.is_pressed() {
+                let targets = self[selected_unit_idx].attacks.0.get_potential_targets(&map, selected_unit_idx);
+                self.selected_unit.as_mut().unwrap().4 = Some((false, targets));
+            } else if textboxes.1.is_pressed() {
+                let targets = self[selected_unit_idx].attacks.1.get_potential_targets(&map, selected_unit_idx);
+                self.selected_unit.as_mut().unwrap().4 = Some((true, targets));
             }
         }
-    }
+    } 
 }
 
 impl<'a> std::ops::Index<&HexIndex> for Units<'a> {
@@ -256,42 +292,51 @@ impl<'a> Drawable for Units<'a> {
             unit.draw_on_canvas(&mut canvas, &DrawingData {position: &idx.try_into().unwrap(), ..drawing_data}, self.textures);
         }
 
-        if let Some((start, route, reachable_tiles, attacks)) = &self.selected_unit {
+        if let Some((start, route, reachable_tiles, textboxes, selected_action)) = &self.selected_unit {
             let canvas_width = canvas.get_width();
             let canvas_height = canvas.get_height();
 
-            if let Some(route) = route {
-                let context = canvas.get_2d_canvas_rendering_context();
-                context.begin_path();
-
-                let (x, y) = start.get_canvas_coords();
-                let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
-                context.move_to(x as f64, y as f64);
-
-                for tile in route {
-                    let (x, y) = tile.get_canvas_coords();
-                    let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
-
-                    context.line_to(x as f64, y as f64);
+            if let Some((action, targets)) = selected_action {
+                for target in targets {
+                    let (x, y) = target.get_canvas_coords();
+                    let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize, y as isize);
+    
+                    canvas.get_2d_canvas_rendering_context().draw_image_with_html_image_element_and_dw_and_dh(self.overground[1].get_html_element(), x as f64, y as f64, 256.0 * factor, 384.0 * factor).unwrap();
                 }
-
-                self.line_style.apply_on_canvas(&mut canvas);
-                
-                canvas.get_2d_canvas_rendering_context().stroke();
+            } else {
+                if let Some(route) = route {
+                    let context = canvas.get_2d_canvas_rendering_context();
+                    context.begin_path();
+    
+                    let (x, y) = start.get_canvas_coords();
+                    let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
+                    context.move_to(x as f64, y as f64);
+    
+                    for tile in route {
+                        let (x, y) = tile.get_canvas_coords();
+                        let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
+    
+                        context.line_to(x as f64, y as f64);
+                    }
+    
+                    self.line_style.apply_on_canvas(&mut canvas);
+                    
+                    canvas.get_2d_canvas_rendering_context().stroke();
+                }
+    
+                for reachable_tile in reachable_tiles.iter().enumerate().filter(|v| v.1.is_none()).map(|v| {
+                    let v: HexIndex = v.0.try_into().unwrap();
+                    v
+                }) {
+                    let (x, y) = reachable_tile.get_canvas_coords();
+                    let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize, y as isize);
+    
+                    canvas.get_2d_canvas_rendering_context().draw_image_with_html_image_element_and_dw_and_dh(self.overground[0].get_html_element(), x as f64, y as f64, 256.0 * factor, 384.0 * factor).unwrap();
+                }
             }
 
-            for reachable_tile in reachable_tiles.iter().enumerate().filter(|v| v.1.is_none()).map(|v| {
-                let v: HexIndex = v.0.try_into().unwrap();
-                v
-            }) {
-                let (x, y) = reachable_tile.get_canvas_coords();
-                let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize, y as isize);
-
-                canvas.get_2d_canvas_rendering_context().draw_image_with_html_image_element_and_dw_and_dh(self.green.get_html_element(), x as f64, y as f64, 256.0 * factor, 384.0 * factor).unwrap();
-            }
-
-            canvas.draw(&attacks.0);
-            canvas.draw(&attacks.1);
+            canvas.draw(&textboxes.0);
+            canvas.draw(&textboxes.1);
         }
     }
 }
