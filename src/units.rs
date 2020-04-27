@@ -146,7 +146,7 @@ impl<'a> Units<'a> {
     pub fn set(&mut self, idx: &HexIndex, unit: Option<Unit>) {
         self.units[idx.get_index()] = unit;
     }
-    
+
     pub fn set_margin(&mut self, margin: usize) {
         self.margin = margin;
         if let Some((_, _, _, textboxes)) = &mut self.selected_unit {
@@ -178,7 +178,7 @@ impl<'a> Units<'a> {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
         if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
             if let Some((selected_unit_idx, route, reachable, _attacks)) = &self.selected_unit { // if a unit is selected
-                if self.get(&clicked_tile_idx).is_none() && route.is_some() {
+                if (self.get(&clicked_tile_idx).is_none() || clicked_tile_idx == *selected_unit_idx) && route.is_some() {
                     let mut selected_unit = self.units[selected_unit_idx.get_index()].take().unwrap();
                     selected_unit.remaining_moves -= reachable[clicked_tile_idx.get_index()].unwrap();
                     self.set(&clicked_tile_idx, Some(selected_unit));
