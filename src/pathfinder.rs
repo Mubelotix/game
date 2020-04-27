@@ -2,12 +2,12 @@ use crate::{idx::HexIndex, map::*, units::*};
 use wasm_game_lib::graphics::{drawable::*, canvas::*, color::Color};
 use std::convert::TryInto;
 
-pub fn find_route(units: &Units, _map: &Map, starting_point: HexIndex, arrival_point: HexIndex, max_moves: usize) -> Option<Vec<HexIndex>> {
+pub fn compute_travel_time(units: &Units, _map: &Map, starting_point: HexIndex, max_moves: usize) -> [Option<usize>; 61] {
     let mut travel_time: [Option<usize>; 61] = [None; 61];
     travel_time[starting_point.get_index()] = Some(0);
     let mut paths: Vec<HexIndex> = vec![starting_point];
 
-    while !paths.is_empty() && travel_time[arrival_point.get_index()].is_none() {
+    while !paths.is_empty() {
         let this_path = paths.remove(0);
         let travel_time_to_here = travel_time[this_path.get_index()].unwrap();
 
@@ -51,6 +51,10 @@ pub fn find_route(units: &Units, _map: &Map, starting_point: HexIndex, arrival_p
         }
     }
 
+    travel_time
+}
+
+pub fn find_route(travel_time: &[Option<usize>; 61], starting_point: HexIndex, arrival_point: HexIndex) -> Option<Vec<HexIndex>> {
     if travel_time[arrival_point.get_index()].is_some() {
         let mut full_path: Vec<HexIndex> = Vec::new();
         let mut last = arrival_point;
