@@ -24,7 +24,7 @@ const MARGIN: usize = 10;
 const FONT_SIZE: usize = 20;
 
 pub struct TextBox<'a> {
-    pub coords: (f64, f64),
+    coords: (f64, f64),
     width: RefCell<usize>,
     full_message: Vec<&'a str>,
     displayed_message: RefCell<(usize, Vec<usize>)>,
@@ -51,10 +51,8 @@ impl<'a> TextBox<'a> {
         *self.displayed_message.borrow_mut() = (0, Vec::new());
         *self.width.borrow_mut() = width;
     }
-}
 
-impl<'a> Drawable for TextBox<'a> {
-    fn draw_on_canvas(&self, mut canvas: &mut Canvas) {
+    pub fn init(&self, mut canvas: &mut Canvas) {
         let width = *self.width.borrow() as f64;
 
         while self.displayed_message.borrow().0 < self.full_message.len() {
@@ -107,7 +105,22 @@ impl<'a> Drawable for TextBox<'a> {
                 self.displayed_text.borrow_mut().set_text(displayed_message);
             }
         }
-        
+    }
+
+    pub fn get_height(&self) -> usize {
+        self.displayed_text.borrow().get_height() + MARGIN * 2
+    }
+
+    pub fn set_y(&mut self, y: usize) {
+        self.coords.1 = y as f64;
+        self.displayed_text.borrow_mut().coords.1 = y + MARGIN + FONT_SIZE / 2;
+    }
+}
+
+impl<'a> Drawable for TextBox<'a> {
+    fn draw_on_canvas(&self, mut canvas: &mut Canvas) {
+        self.init(&mut canvas);
+        let width = *self.width.borrow() as f64;
 
         BOX_STYLE.apply_on_canvas(&mut canvas);
         let context = canvas.get_2d_canvas_rendering_context();

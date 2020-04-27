@@ -155,6 +155,14 @@ impl<'a> Units<'a> {
         }
     }
 
+    pub fn handle_resize_event(&mut self, canvas: &mut Canvas) {
+        let canvas_height = canvas.get_height() as usize;
+        if let Some((_, _, attacks)) = &mut self.selected_unit {
+            attacks.0.set_y(canvas_height - attacks.0.get_height());
+            attacks.1.set_y(canvas_height - attacks.0.get_height() - attacks.1.get_height());
+        }
+    }
+
     pub fn handle_mouse_move(&mut self, map: &Map, x: u32, y: u32) {
         if let Some((unit, _route, _attacks)) = &self.selected_unit {
             let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
@@ -166,7 +174,7 @@ impl<'a> Units<'a> {
         }
     }
     
-    pub fn handle_mouse_click(&mut self, map: &Map, x: u32, y: u32, arial: &'a Font) {
+    pub fn handle_mouse_click(&mut self, map: &Map, x: u32, y: u32, arial: &'a Font, mut canvas: &mut Canvas) {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
         if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
             if let Some((selected_unit_idx, route, _attacks)) = &self.selected_unit { // if a unit is selected
@@ -176,7 +184,14 @@ impl<'a> Units<'a> {
                     self.selected_unit = None;
                 }
             } else if self.get(&clicked_tile_idx).is_some() { // if no unit is selected but a unit has been clicked
-                self.selected_unit = Some((clicked_tile_idx, None, (TextBox::new((10.0, 200.0), self.margin - 20, &arial, self[&clicked_tile_idx].attacks.0.get_description()), TextBox::new((10.0, 300.0), self.margin - 20, &arial, self[&clicked_tile_idx].attacks.1.get_description()))));
+                let canvas_height = canvas.get_height() as usize;
+                let mut t1 = TextBox::new((10.0, 200.0), self.margin - 20, &arial, self[&clicked_tile_idx].attacks.0.get_description());
+                let mut t2 = TextBox::new((10.0, 300.0), self.margin - 20, &arial, self[&clicked_tile_idx].attacks.1.get_description());
+                t1.init(&mut canvas);
+                t2.init(&mut canvas);
+                t2.set_y(canvas_height - t2.get_height());
+                t1.set_y(canvas_height - t2.get_height() - t1.get_height());
+                self.selected_unit = Some((clicked_tile_idx, None, (t1, t2)));
             }
         }
     }

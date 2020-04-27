@@ -72,6 +72,7 @@ pub async fn start() -> Result<(), JsValue> {
                     canvas.set_height(height);
                     margin = canvas.get_width() as usize / 5;
                     map.margin = margin;
+                    units.handle_resize_event(&mut canvas);
                     units.set_margin(margin);
                     map.dimensions = (width as usize, height as usize)
                 }
@@ -80,7 +81,7 @@ pub async fn start() -> Result<(), JsValue> {
                         units.handle_mouse_move(&map, x, y);
                     }
                     MouseEvent::Click(x, y) => {
-                        units.handle_mouse_click(&map, x, y, &arial);
+                        units.handle_mouse_click(&map, x, y, &arial, &mut canvas);
                     }
                     _ => (),
                 }
