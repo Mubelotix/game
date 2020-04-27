@@ -1,6 +1,6 @@
-use crate::{idx::HexIndex, map::*, pathfinder::find_route};
+use crate::{idx::HexIndex, map::*, pathfinder::find_route, textbox::*};
 use arr_macro::arr;
-use wasm_game_lib::graphics::{canvas::*, image::*, drawable::*, color::*};
+use wasm_game_lib::graphics::{canvas::*, image::*, drawable::*, color::*, font::*};
 use std::convert::TryInto;
 
 #[derive(PartialEq)]
@@ -35,7 +35,7 @@ impl UnitType {
 pub struct Unit {
     pub unit_type: UnitType,
     remaining_moves: usize,
-    pub attacks: [Attack; 2],
+    pub attacks: (Attack, Attack),
 }
 
 impl Unit {
@@ -43,7 +43,7 @@ impl Unit {
         Unit {
             remaining_moves: unit_type.moves_per_turn(),
             unit_type,
-            attacks: [Attack::StickKnock, Attack::StickKnock],
+            attacks: (Attack::StickKnock, Attack::StickKnock),
         }
     }
 
@@ -62,7 +62,7 @@ impl Attack {
         unimplemented!();
     }
 
-    pub fn get_description(&self) -> &str {
+    pub fn get_description(&self) -> &'static str {
         match self {
             Attack::StickKnock => "Hit an adjacent unit (1 damage) and push it away.",
         }
@@ -90,7 +90,7 @@ pub struct Units<'a> {
     textures: [&'a Image; 4],
     margin: usize,
     line_style: LineStyle,
-    selected_unit: Option<(HexIndex, Option<Vec<HexIndex>>)>
+    selected_unit: Option<(HexIndex, Option<Vec<HexIndex>>, (TextBox<'a>, TextBox<'a>))>,
 }
 
 impl<'a> Units<'a> {
@@ -123,11 +123,14 @@ impl<'a> Units<'a> {
 
     pub fn set_margin(&mut self, margin: usize) {
         self.margin = margin;
-        //TODO OTHER
+        if let Some((_, _, textboxes)) = &mut self.selected_unit {
+            textboxes.0.set_width(margin - 20);
+            textboxes.1.set_width(margin - 20);
+        }
     }
 
     pub fn handle_mouse_move(&mut self, map: &Map, x: u32, y: u32) {
-        if let Some((unit, _route)) = &self.selected_unit {
+        if let Some((unit, _route, _attacks)) = &self.selected_unit {
             let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
             if let Some(index) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
                 self.selected_unit.as_mut().unwrap().1 = find_route(&self, &map, *unit, index, self[unit].get_remaining_moves());
@@ -136,20 +139,18 @@ impl<'a> Units<'a> {
             }
         }
     }
-
     
-
-    pub fn handle_mouse_click(&mut self, map: &Map, x: u32, y: u32) {
+    pub fn handle_mouse_click(&mut self, map: &Map, x: u32, y: u32, arial: &'a Font) {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
         if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
-            if let Some((selected_unit_idx, route)) = &self.selected_unit { // if a unit is selected
+            if let Some((selected_unit_idx, route, _attacks)) = &self.selected_unit { // if a unit is selected
                 if self.get(&clicked_tile_idx).is_none() && route.is_some() {
                     let selected_unit = self.units[selected_unit_idx.get_index()].take().unwrap();
                     self.set(&clicked_tile_idx, Some(selected_unit));
                     self.selected_unit = None;
                 }
             } else if self.get(&clicked_tile_idx).is_some() { // if no unit is selected but a unit has been clicked
-                self.selected_unit = Some((clicked_tile_idx, None));
+                self.selected_unit = Some((clicked_tile_idx, None, (TextBox::new((10.0, 200.0), self.margin - 20, &arial, self[&clicked_tile_idx].attacks.0.get_description()), TextBox::new((10.0, 300.0), self.margin - 20, &arial, self[&clicked_tile_idx].attacks.1.get_description()))));
             }
         }
     }
@@ -191,26 +192,31 @@ impl<'a> Drawable for Units<'a> {
             context.draw_image_with_html_image_element_and_dw_and_dh(self.textures[unit.unit_type.get_texture_idx()].get_html_element(), coords.0 as f64, coords.1 as f64, 150.0 * factor, 150.0 * factor).unwrap();
         }
 
-        if let Some((start, Some(route))) = &self.selected_unit {
-            let canvas_width = canvas.get_width();
-            let canvas_height = canvas.get_height();
-            let context = canvas.get_2d_canvas_rendering_context();
-            context.begin_path();
+        if let Some((start, route, attacks)) = &self.selected_unit {
+            if let Some(route) = route {
+                let canvas_width = canvas.get_width();
+                let canvas_height = canvas.get_height();
+                let context = canvas.get_2d_canvas_rendering_context();
+                context.begin_path();
 
-            let (x, y) = start.get_canvas_coords();
-            let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
-            context.move_to(x as f64, y as f64);
-
-            for tile in route {
-                let (x, y) = tile.get_canvas_coords();
+                let (x, y) = start.get_canvas_coords();
                 let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
+                context.move_to(x as f64, y as f64);
 
-                context.line_to(x as f64, y as f64);
+                for tile in route {
+                    let (x, y) = tile.get_canvas_coords();
+                    let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
+
+                    context.line_to(x as f64, y as f64);
+                }
+
+                self.line_style.apply_on_canvas(&mut canvas);
+                
+                canvas.get_2d_canvas_rendering_context().stroke();
             }
 
-            self.line_style.apply_on_canvas(&mut canvas);
-            
-            canvas.get_2d_canvas_rendering_context().stroke();
+            canvas.draw(&attacks.0);
+            canvas.draw(&attacks.1);
         }
     }
 }

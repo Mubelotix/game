@@ -40,7 +40,6 @@ pub async fn start() -> Result<(), JsValue> {
     let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]], margin);
     let arial = Font::arial();
     let next_turn_button = Button::new((10.0, 10.0), None, &arial, String::from("Next turn"));
-    let mut test = TextBox::new((10.0, 200.0), margin - 20, &arial, "Ceci est un test qui va sans doute ne pas très bien marcher");
     
     units.set(&3.try_into().unwrap(), Some(Unit::new(UnitType::Archer)));
     units.set(&4.try_into().unwrap(), Some(Unit::new(UnitType::Scout)));
@@ -74,7 +73,6 @@ pub async fn start() -> Result<(), JsValue> {
                     margin = canvas.get_width() as usize / 5;
                     map.margin = margin;
                     units.set_margin(margin);
-                    test.set_width(margin - 20);
                     map.dimensions = (width as usize, height as usize)
                 }
                 Event::MouseEvent(me) => match me {
@@ -82,7 +80,7 @@ pub async fn start() -> Result<(), JsValue> {
                         units.handle_mouse_move(&map, x, y);
                     }
                     MouseEvent::Click(x, y) => {
-                        units.handle_mouse_click(&map, x, y);
+                        units.handle_mouse_click(&map, x, y, &arial);
                     }
                     _ => (),
                 }
@@ -99,7 +97,6 @@ pub async fn start() -> Result<(), JsValue> {
         canvas.draw(&map);
         canvas.draw(&units);
         canvas.draw(&next_turn_button);
-        canvas.draw(&test);
 
         sleep(Duration::from_millis(16)).await;
     }

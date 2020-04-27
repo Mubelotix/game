@@ -1,3 +1,4 @@
+use crate::units::Attack;
 use wasm_game_lib::graphics::text::*;
 use wasm_game_lib::graphics::drawable::*;
 use wasm_game_lib::graphics::canvas::*;
@@ -54,9 +55,6 @@ impl<'a> TextBox<'a> {
 
 impl<'a> Drawable for TextBox<'a> {
     fn draw_on_canvas(&self, mut canvas: &mut Canvas) {
-        /*if self.width.borrow().is_none() {
-            *self.width.borrow_mut() = Some(self.text.get_width(&mut canvas) + 14.0);
-        }*/
         let width = *self.width.borrow() as f64;
 
         if self.displayed_text.borrow().get_width(&mut canvas) + MARGIN as f64 * 2.0 < width {
