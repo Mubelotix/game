@@ -42,8 +42,13 @@ impl Unit {
     pub fn new(unit_type: UnitType) -> Unit {
         Unit {
             remaining_moves: unit_type.moves_per_turn(),
+            attacks: match unit_type {
+                UnitType::Archer => (Attack::VolleyOfArrows, Attack::Heal),
+                UnitType::Scout => (Attack::StickKnock, Attack::Heal),
+                UnitType::Knight => (Attack::OffensiveSwordFight, Attack::DefensiveSwordFight),
+                UnitType::Barbarian => (Attack::StickKnock, Attack::Heal),
+            },
             unit_type,
-            attacks: (Attack::StickKnock, Attack::StickKnock),
         }
     }
 
@@ -55,6 +60,10 @@ impl Unit {
 #[derive(PartialEq, Clone)]
 pub enum Attack {
     StickKnock,
+    VolleyOfArrows,
+    OffensiveSwordFight,
+    DefensiveSwordFight,
+    Heal,
 }
 
 impl Attack {
@@ -65,12 +74,20 @@ impl Attack {
     pub fn get_description(&self) -> &'static str {
         match self {
             Attack::StickKnock => "Hit an adjacent unit (1 damage) and push it away.",
+            Attack::VolleyOfArrows => "Shoot arrows in one direction. The first ennemy on that direction will be damaged (1 damage) and pushed away.",
+            Attack::OffensiveSwordFight => "Attack adjacent unit using sword (2 damage) and pull it (1 damage for both units).",
+            Attack::DefensiveSwordFight => "Attack adjacent unit using sword (2 damage) and push it away.",
+            Attack::Heal => "Restore 1 LP. The healed unit will be restored at least to the third of the max LPs.",
         }
     }
 
     pub fn get_name(&self) -> &str {
         match self {
             Attack::StickKnock => "Stick Knock",
+            Attack::VolleyOfArrows => "Volley of Arrows",
+            Attack::OffensiveSwordFight => "Offensive Sword Fight",
+            Attack::DefensiveSwordFight => "Defensive Sword Fight",
+            Attack::Heal => "Heal",
         }
     }
 
@@ -81,6 +98,15 @@ impl Attack {
     pub fn can_be_used_by_unit(&self, unit: &UnitType) -> bool {
         match self {
             Attack::StickKnock => true,
+            Attack::Heal => true,
+            Attack::VolleyOfArrows => match unit {
+                UnitType::Archer => true,
+                _ => false,
+            },
+            Attack::OffensiveSwordFight | Attack::DefensiveSwordFight => match unit {
+                UnitType::Knight => true,
+                _ => false,
+            }
         }
     }
 }
