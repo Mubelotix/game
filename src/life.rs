@@ -29,6 +29,14 @@ impl Life {
         }
     }
 
+    pub fn lose_life(&mut self, damage: usize) {
+        if damage >= self.current {
+            self.current = 0;
+        } else {
+            self.current -= damage;
+        }
+    }
+
     pub fn draw_on_canvas(&self, mut canvas: &mut Canvas, data: &DrawingData) {
         BORDER_STYLE.apply_on_canvas(&mut canvas);
 

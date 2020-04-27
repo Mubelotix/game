@@ -88,8 +88,10 @@ pub enum Attack {
 }
 
 impl Attack {
-    pub fn apply(&self, map: &mut Map, units: &mut Units) {
-        unimplemented!();
+    pub fn apply(&self, position: HexIndex, map: &mut Map, units: &mut Units) {
+        if let Some(unit) = units.get_mut(&position) {
+            unit.life.lose_life(1);
+        }
     }
 
     pub fn get_description(&self) -> &'static str {
@@ -132,27 +134,93 @@ impl Attack {
     }
 
     pub fn get_potential_targets(&self, map: &Map, position: &HexIndex) -> Vec<HexIndex> {
-        let mut targets = Vec::new();
-
-        if let Some(index) = position.get_top_left_neighbour() {
-            targets.push(index);
-        }
-        if let Some(index) = position.get_top_right_neighbour() {
-            targets.push(index);
-        }
-        if let Some(index) = position.get_right_neighbour() {
-            targets.push(index);
-        }
-        if let Some(index) = position.get_bottom_right_neighbour() {
-            targets.push(index);
-        }
-        if let Some(index) = position.get_bottom_left_neighbour() {
-            targets.push(index);
-        }
-        if let Some(index) = position.get_left_neighbour() {
-            targets.push(index);
-        }
-        targets
+        match self {
+            Attack::Heal => {
+                let mut targets = Vec::new();
+                if let Some(index) = position.get_top_left_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_top_right_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_right_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_bottom_right_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_bottom_left_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_left_neighbour() {
+                    targets.push(index);
+                }
+                targets.push(*position);
+                targets
+            }
+            Attack::DefensiveSwordFight | Attack::OffensiveSwordFight | Attack::StickKnock => {
+                let mut targets = Vec::new();
+                if let Some(index) = position.get_top_left_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_top_right_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_right_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_bottom_right_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_bottom_left_neighbour() {
+                    targets.push(index);
+                }
+                if let Some(index) = position.get_left_neighbour() {
+                    targets.push(index);
+                }
+                targets
+            }
+            Attack::VolleyOfArrows => {
+                let mut targets = Vec::new();
+                if let Some(index) = position.get_top_left_neighbour() {
+                    targets.push(index);
+                    while let Some(index) = targets[targets.len() - 1].get_top_left_neighbour() {
+                        targets.push(index);
+                    }
+                }
+                if let Some(index) = position.get_top_right_neighbour() {
+                    targets.push(index);
+                    while let Some(index) = targets[targets.len() - 1].get_top_right_neighbour() {
+                        targets.push(index);
+                    }
+                }
+                if let Some(index) = position.get_right_neighbour() {
+                    targets.push(index);
+                    while let Some(index) = targets[targets.len() - 1].get_right_neighbour() {
+                        targets.push(index);
+                    }
+                }
+                if let Some(index) = position.get_bottom_right_neighbour() {
+                    targets.push(index);
+                    while let Some(index) = targets[targets.len() - 1].get_bottom_right_neighbour() {
+                        targets.push(index);
+                    }
+                }
+                if let Some(index) = position.get_bottom_left_neighbour() {
+                    targets.push(index);
+                    while let Some(index) = targets[targets.len() - 1].get_bottom_left_neighbour() {
+                        targets.push(index);
+                    }
+                }
+                if let Some(index) = position.get_left_neighbour() {
+                    targets.push(index);
+                    while let Some(index) = targets[targets.len() - 1].get_left_neighbour() {
+                        targets.push(index);
+                    }
+                }
+                targets
+            }
+        }        
     }
 }
 
@@ -188,6 +256,10 @@ impl<'a> Units<'a> {
         &self.units[idx.get_index()]
     }
 
+    pub fn get_mut(&mut self, idx: &HexIndex) -> &mut Option<Unit> {
+        &mut self.units[idx.get_index()]
+    }
+
     pub fn set(&mut self, idx: &HexIndex, unit: Option<Unit>) {
         self.units[idx.get_index()] = unit;
     }
@@ -219,7 +291,7 @@ impl<'a> Units<'a> {
         }
     }
     
-    pub fn handle_mouse_click(&mut self, map: &Map, x: u32, y: u32, arial: &'a Font, mut canvas: &mut Canvas) {
+    pub fn handle_mouse_click(&mut self, mut map: &mut Map, x: u32, y: u32, arial: &'a Font, mut canvas: &mut Canvas) {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
         if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
             if let Some((selected_unit_idx, route, reachable, textboxes, selected_action)) = &self.selected_unit { // if a unit is selected
@@ -229,7 +301,13 @@ impl<'a> Units<'a> {
                     self.set(&clicked_tile_idx, Some(selected_unit));
                     self.selected_unit = None;
                 } else if let Some((action, targets)) = selected_action {
-                    log!("ACTION!");
+                    if *action {
+                        let attack = self[selected_unit_idx].attacks.0.clone();
+                        attack.apply(clicked_tile_idx, &mut map, self);
+                    } else {
+                        let attack = self[selected_unit_idx].attacks.1.clone();
+                        attack.apply(clicked_tile_idx, &mut map, self);
+                    }
                     self.selected_unit.as_mut().unwrap().4 = None;
                 }
             } else if self.get(&clicked_tile_idx).is_some() { // if no unit is selected but a unit has been clicked

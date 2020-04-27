@@ -88,7 +88,7 @@ pub async fn start() -> Result<(), JsValue> {
                         units.handle_mouse_move(&map, x, y);
                     }
                     MouseEvent::Click(x, y) => {
-                        units.handle_mouse_click(&map, x, y, &arial, &mut canvas);
+                        units.handle_mouse_click(&mut map, x, y, &arial, &mut canvas);
                     }
                     _ => (),
                 }
