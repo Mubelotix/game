@@ -15,7 +15,7 @@ use wasm_game_lib::system::sleep;
 use std::time::Duration;
 use std::convert::TryInto;
 use web_sys;
-mod loader; mod map; mod random; mod units; mod pathfinder; mod button; mod idx; mod progress_bar; mod textbox;
+mod loader; mod map; mod random; mod units; mod pathfinder; mod button; mod idx; mod progress_bar; mod textbox; mod life;
 use loader::load_images;
 use map::*;
 use units::*;
@@ -23,6 +23,13 @@ use idx::*;
 use pathfinder::*;
 use button::*;
 use textbox::*;
+
+pub struct DrawingData<'a> {
+    pub margin: usize,
+    pub dimensions: (u32, u32),
+    pub position: &'a HexIndex,
+    pub factor: f64,
+}
 
 #[allow(clippy::single_match)]
 #[wasm_bindgen(start)]

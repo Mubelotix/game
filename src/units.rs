@@ -1,7 +1,8 @@
-use crate::{idx::HexIndex, map::*, pathfinder::*, textbox::*};
+use crate::{idx::HexIndex, map::*, pathfinder::*, textbox::*, life::*, *};
 use arr_macro::arr;
 use wasm_game_lib::graphics::{canvas::*, image::*, drawable::*, color::*, font::*};
 use std::convert::TryInto;
+use wasm_bindgen::JsValue;
 
 #[derive(PartialEq)]
 pub enum UnitType {
@@ -29,6 +30,15 @@ impl UnitType {
             UnitType::Barbarian => 3
         }
     }
+
+    pub fn max_life_points(&self) -> usize {
+        match self {
+            UnitType::Archer => 2,
+            UnitType::Knight => 4,
+            UnitType::Scout => 3,
+            UnitType::Barbarian => 3,
+        }
+    }
 }
 
 #[derive(PartialEq)]
@@ -36,12 +46,14 @@ pub struct Unit {
     pub unit_type: UnitType,
     pub remaining_moves: usize,
     pub attacks: (Attack, Attack),
+    pub life: Life,
 }
 
 impl Unit {
     pub fn new(unit_type: UnitType) -> Unit {
         Unit {
             remaining_moves: unit_type.moves_per_turn(),
+            life: Life::new(&unit_type),
             attacks: match unit_type {
                 UnitType::Archer => (Attack::VolleyOfArrows, Attack::Heal),
                 UnitType::Scout => (Attack::StickKnock, Attack::Heal),
@@ -54,6 +66,15 @@ impl Unit {
 
     pub fn get_remaining_moves(&self) -> usize {
         self.remaining_moves
+    }
+
+    pub fn draw_on_canvas(&self, mut canvas: &mut Canvas, data: &DrawingData, textures: [&Image; 4]) {
+        let coords = data.position.get_canvas_coords();
+        let coords = Map::internal_coords_to_screen_coords(data.dimensions, data.margin, coords.0 as isize + 50, coords.1 as isize + 160);
+        
+        canvas.context.draw_image_with_html_image_element_and_dw_and_dh(textures[self.unit_type.get_texture_idx()].get_html_element(), coords.0 as f64, coords.1 as f64, 150.0 * data.factor, 150.0 * data.factor).unwrap();
+
+        self.life.draw_on_canvas(&mut canvas, data);
     }
 }
 
@@ -223,16 +244,17 @@ impl<'a> Drawable for Units<'a> {
             factor_height
         };
 
-        {let context = canvas.get_2d_canvas_rendering_context();
+        let drawing_data = DrawingData {
+            factor,
+            dimensions,
+            margin: self.margin,
+            position: &0.try_into().unwrap(),
+        };
 
         for (idx, unit) in self.units.iter().enumerate().filter(|(_i, u)| u.is_some()) {
             let unit = unit.as_ref().unwrap();
-            let coords: HexIndex = idx.try_into().unwrap();
-            let coords = coords.get_canvas_coords();
-            let coords = Map::internal_coords_to_screen_coords(dimensions, self.margin, coords.0 as isize + 50, coords.1 as isize + 160);
-        
-            context.draw_image_with_html_image_element_and_dw_and_dh(self.textures[unit.unit_type.get_texture_idx()].get_html_element(), coords.0 as f64, coords.1 as f64, 150.0 * factor, 150.0 * factor).unwrap();
-        }}
+            unit.draw_on_canvas(&mut canvas, &DrawingData {position: &idx.try_into().unwrap(), ..drawing_data}, self.textures);
+        }
 
         if let Some((start, route, reachable_tiles, attacks)) = &self.selected_unit {
             let canvas_width = canvas.get_width();
