@@ -111,13 +111,15 @@ impl Attack {
     }
 }
 
+type SelectedUnit<'a> = (HexIndex, Option<Vec<HexIndex>>, [Option<usize>; 61], (TextBox<'a>, TextBox<'a>));
+
 pub struct Units<'a> {
     units: [Option<Unit>; 61],
     textures: [&'a Image; 4],
     green: &'a Image,
     margin: usize,
     line_style: LineStyle,
-    selected_unit: Option<(HexIndex, Option<Vec<HexIndex>>, [Option<usize>; 61], (TextBox<'a>, TextBox<'a>))>,
+    selected_unit: Option<SelectedUnit<'a>>,
 }
 
 impl<'a> Units<'a> {
@@ -144,11 +146,7 @@ impl<'a> Units<'a> {
     pub fn set(&mut self, idx: &HexIndex, unit: Option<Unit>) {
         self.units[idx.get_index()] = unit;
     }
-
-    pub fn get_mut(&mut self, idx: &HexIndex) -> &mut Option<Unit> {
-        &mut self.units[idx.get_index()]
-    }
-
+    
     pub fn set_margin(&mut self, margin: usize) {
         self.margin = margin;
         if let Some((_, _, _, textboxes)) = &mut self.selected_unit {
