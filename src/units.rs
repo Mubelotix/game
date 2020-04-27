@@ -217,7 +217,7 @@ impl<'a> std::ops::IndexMut<&HexIndex> for Units<'a> {
 impl<'a> Drawable for Units<'a> {
     fn draw_on_canvas(&self, mut canvas: &mut Canvas) {
         let dimensions = (canvas.get_width(), canvas.get_height());
-        let factor_width: f64 = dimensions.0 as f64 / CANVAS_WIDTH;
+        let factor_width: f64 = (dimensions.0 as usize - self.margin) as f64 / CANVAS_WIDTH;
         let factor_height = dimensions.1 as f64 / CANVAS_HEIGHT;
         let factor = if factor_width < factor_height {
             factor_width
