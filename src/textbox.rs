@@ -57,9 +57,25 @@ impl<'a> Drawable for TextBox<'a> {
     fn draw_on_canvas(&self, mut canvas: &mut Canvas) {
         let width = *self.width.borrow() as f64;
 
-        if self.displayed_text.borrow().get_width(&mut canvas) + MARGIN as f64 * 2.0 < width {
-            let (words, end_line) = &mut *self.displayed_message.borrow_mut();
-            if *words < self.full_message.len() {
+        while self.displayed_message.borrow().0 < self.full_message.len() {
+            if self.displayed_text.borrow().get_width(&mut canvas) + MARGIN as f64 * 2.0 < width {
+                let (words, end_line) = &mut *self.displayed_message.borrow_mut();
+                *words += 1;
+                let mut displayed_message = String::new();
+                for (idx, word) in self.full_message.iter().enumerate() {
+                    if idx < *words {
+                        displayed_message.push_str(word);
+                        if end_line.contains(&idx) {
+                            displayed_message.push('\n');
+                        } else {
+                            displayed_message.push(' ');
+                        }
+                    }
+                }
+                self.displayed_text.borrow_mut().set_text(displayed_message);
+            } else {
+                let (words, end_line) = &mut *self.displayed_message.borrow_mut();
+                end_line.push(*words - 2);
                 *words += 1;
                 let mut displayed_message = String::new();
                 for (idx, word) in self.full_message.iter().enumerate() {
@@ -74,22 +90,8 @@ impl<'a> Drawable for TextBox<'a> {
                 }
                 self.displayed_text.borrow_mut().set_text(displayed_message);
             }
-        } else {
-            let (words, end_line) = &mut *self.displayed_message.borrow_mut();
-            end_line.push(*words - 2);
-            let mut displayed_message = String::new();
-            for (idx, word) in self.full_message.iter().enumerate() {
-                if idx < *words {
-                    displayed_message.push_str(word);
-                    if end_line.contains(&idx) {
-                        displayed_message.push('\n');
-                    } else {
-                        displayed_message.push(' ');
-                    }
-                }
-            }
-            self.displayed_text.borrow_mut().set_text(displayed_message);
         }
+        
 
         BOX_STYLE.apply_on_canvas(&mut canvas);
         let context = canvas.get_2d_canvas_rendering_context();
