@@ -29,11 +29,14 @@ impl Life {
         }
     }
 
-    pub fn lose_life(&mut self, damage: usize) {
-        if damage >= self.current {
+    pub fn lose_life(&mut self, damage: isize) {
+        if damage >= self.current as isize {
             self.current = 0;
         } else {
-            self.current -= damage;
+            self.current = (self.current as isize - damage) as usize;
+            if self.current > self.max {
+                self.current = self.max;
+            }
         }
     }
 
@@ -41,7 +44,7 @@ impl Life {
         self.current == 0
     }
 
-    pub fn previsualise_loss(&self, damage: usize) -> Life {
+    pub fn previsualise_loss(&self, damage: isize) -> Life {
         let mut life = Life {
             max: self.max,
             current: self.current,

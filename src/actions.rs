@@ -23,10 +23,10 @@ impl Attack {
                     } else {
                         units[position.get_index()].as_mut().unwrap().life = life;
                     }
-                },
+                }
                 (_position, PrevisualisationItem::LongDistanceShoot(_target)) => {
                     // TODO burn forests, destroy montains
-                },
+                }
                 (position, PrevisualisationItem::PushArrow(direction)) => {
                     if let Some(new_position) = position.get_neighbour(&direction) {
                         if units[new_position.get_index()].is_none() {
@@ -35,7 +35,7 @@ impl Attack {
                             }
                         }
                     }
-                },
+                }
             }
         }
     }
@@ -169,75 +169,51 @@ impl Attack {
                     if Some(*target) == position.get_neighbour(&direction) {
                         let mut consequences = Vec::new();
                         if let Some(life) = units[target.get_index()].as_ref().map(|u| &u.life) {
-                            consequences.push((*target, PrevisualisationItem::LifeChange(life.previsualise_loss(1))));
+                            consequences.push((
+                                *target,
+                                PrevisualisationItem::LifeChange(life.previsualise_loss(1)),
+                            ));
                         }
                         consequences.push((*target, PrevisualisationItem::PushArrow(direction)));
                         return consequences;
                     }
                 }
-                vec![]
             }
             Attack::DefensiveSwordFight => {
-                if Some(*target) == position.get_neighbour(&Direction::TopLeft) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopLeft))];
+                for direction in Direction::iter() {
+                    if Some(*target) == position.get_neighbour(&direction) {
+                        let mut consequences = Vec::new();
+                        if let Some(life) = units[target.get_index()].as_ref().map(|u| &u.life) {
+                            consequences.push((
+                                *target,
+                                PrevisualisationItem::LifeChange(life.previsualise_loss(2)),
+                            ));
+                        }
+                        consequences.push((*target, PrevisualisationItem::PushArrow(direction)));
+                        return consequences;
+                    }
                 }
-                if Some(*target) == position.get_neighbour(&Direction::TopRight) {
-                    return vec![(
-                        *target,
-                        PrevisualisationItem::PushArrow(Direction::TopRight),
-                    )];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::Right) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Right))];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::BottomRight) {
-                    return vec![(
-                        *target,
-                        PrevisualisationItem::PushArrow(Direction::BottomRight),
-                    )];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::BottomLeft) {
-                    return vec![(
-                        *target,
-                        PrevisualisationItem::PushArrow(Direction::BottomLeft),
-                    )];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::Left) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Left))];
-                }
-                vec![]
             }
             Attack::OffensiveSwordFight => {
-                if Some(*target) == position.get_neighbour(&Direction::TopLeft) {
-                    return vec![(
-                        *target,
-                        PrevisualisationItem::PushArrow(Direction::BottomRight),
-                    )];
+                for direction in Direction::iter() {
+                    if Some(*target) == position.get_neighbour(&direction) {
+                        let mut consequences = Vec::new();
+                        if let Some(life) = units[target.get_index()].as_ref().map(|u| &u.life) {
+                            consequences.push((
+                                *target,
+                                PrevisualisationItem::LifeChange(life.previsualise_loss(2)),
+                            ));
+                        }
+                        consequences.push((*target, PrevisualisationItem::PushArrow(!direction)));
+                        return consequences;
+                    }
                 }
-                if Some(*target) == position.get_neighbour(&Direction::TopRight) {
-                    return vec![(
-                        *target,
-                        PrevisualisationItem::PushArrow(Direction::BottomLeft),
-                    )];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::Right) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Left))];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::BottomRight) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopLeft))];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::BottomLeft) {
-                    return vec![(
-                        *target,
-                        PrevisualisationItem::PushArrow(Direction::TopRight),
-                    )];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::Left) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Right))];
-                }
-                vec![]
             }
-            Attack::Heal => vec![],
+            Attack::Heal => {
+                if let Some(life) = units[target.get_index()].as_ref().map(|u| &u.life) {
+                    return vec![(*target, PrevisualisationItem::LifeChange(life.previsualise_loss(-1)))]
+                }
+            },
             Attack::VolleyOfArrows => {
                 let mut final_target = None;
                 let mut final_direction = None;
@@ -272,17 +248,31 @@ impl Attack {
                         }
                     }
                 }
-                vec![
-                    (
-                        *position,
-                        PrevisualisationItem::LongDistanceShoot(final_target.unwrap()),
-                    ),
-                    (
+
+                let mut consequences = Vec::new();
+                if let Some(life) = units[final_target.unwrap().get_index()]
+                    .as_ref()
+                    .map(|u| &u.life)
+                {
+                    consequences.push((
                         final_target.unwrap(),
-                        PrevisualisationItem::PushArrow(final_direction.unwrap()),
-                    ),
-                ]
+                        PrevisualisationItem::LifeChange(life.previsualise_loss(2)),
+                    ));
+                }
+
+                consequences.push((
+                    *position,
+                    PrevisualisationItem::LongDistanceShoot(final_target.unwrap()),
+                ));
+
+                consequences.push((
+                    final_target.unwrap(),
+                    PrevisualisationItem::PushArrow(final_direction.unwrap()),
+                ));
+
+                return consequences;
             }
         }
+        Vec::new()
     }
 }

@@ -257,3 +257,18 @@ impl Direction {
         ]
     }
 }
+
+impl std::ops::Not for Direction {
+    type Output = Direction;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Direction::TopLeft => Direction::BottomRight,
+            Direction::TopRight => Direction::BottomLeft,
+            Direction::Right => Direction::Left,
+            Direction::BottomRight => Direction::TopLeft,
+            Direction::BottomLeft => Direction::TopRight,
+            Direction::Left => Direction::Right,
+        }
+    }
+}
