@@ -203,6 +203,7 @@ impl<'a> std::ops::IndexMut<&HexIndex> for Map<'a> {
     }
 }
 
+#[derive(Clone)]
 pub enum Direction {
     TopLeft,
     TopRight,
@@ -210,4 +211,11 @@ pub enum Direction {
     BottomRight,
     BottomLeft,
     Left
+}
+
+impl Direction {
+    // Fake iter over the 6 directions
+    pub fn iter() -> Vec<Direction> {
+        vec![Direction::TopLeft, Direction::TopRight, Direction::Right, Direction::BottomRight, Direction::BottomLeft, Direction::Left]
+    }
 }

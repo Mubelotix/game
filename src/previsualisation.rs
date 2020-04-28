@@ -15,7 +15,8 @@ impl Previsualisation {
 }
 
 pub enum PrevisualisationItem {
-    PushArrow(Direction)
+    PushArrow(Direction),
+    LongDistanceShoot(HexIndex), // hexindex: target
 }
 
 const PUSH_ARROW_STYLE: LineStyle = LineStyle {
@@ -88,6 +89,27 @@ impl PrevisualisationItem {
                     
                     canvas.get_2d_canvas_rendering_context().stroke();
                 }
+            }
+            PrevisualisationItem::LongDistanceShoot(target) => {
+                let context = canvas.get_2d_canvas_rendering_context();
+                context.begin_path();
+                let array = js_sys::Array::new();
+                array.push(&JsValue::from(1));
+                array.push(&JsValue::from(20));
+                context.set_line_dash(&JsValue::from(array)).unwrap();
+
+                let (x, y) = data.position.get_canvas_coords();
+                let (x, y) = Map::internal_coords_to_screen_coords(data.dimensions, data.margin, x as isize + 128, y as isize + 256);
+                context.move_to(x as f64, y as f64);
+
+                let (x, y) = target.get_canvas_coords();
+                let (x, y) = Map::internal_coords_to_screen_coords(data.dimensions, data.margin, x as isize + 128, y as isize + 256);
+                context.line_to(x as f64, y as f64);
+                
+                PUSH_ARROW_STYLE.apply_on_canvas(&mut canvas);
+                canvas.get_2d_canvas_rendering_context().stroke();
+
+                canvas.context.set_line_dash(&JsValue::from(js_sys::Array::new())).unwrap();
             }
         }
     }

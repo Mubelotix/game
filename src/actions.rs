@@ -1,6 +1,6 @@
 use crate::{idx::*, map::*, units::*, previsualisation::*, *};
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Attack {
     StickKnock,
     VolleyOfArrows,
@@ -10,9 +10,48 @@ pub enum Attack {
 }
 
 impl Attack {
-    pub fn apply(&self, position: HexIndex, map: &mut Map, units: &mut Units) {
-        if let Some(unit) = units.get_mut(&position) {
-            unit.life.lose_life(1);
+    pub fn apply(&self, position: &HexIndex, target: &HexIndex, map: &mut Map, units: &mut Units) {
+        match self {
+            Attack::VolleyOfArrows => {
+                let mut final_target = None;
+
+                for direction in Direction::iter() {
+                    let mut targets = Vec::new();
+                    let mut right_direction = false;
+                    if let Some(index) = position.get_neighbour(&direction) {
+                        if &index == target {
+                            right_direction = true;
+                        }
+                        targets.push(index);
+                        if units.get(&index).is_none() {
+                            while let Some(index) = targets[targets.len() - 1].get_neighbour(&direction) {
+                                if &index == target {
+                                    right_direction = true;
+                                }
+                                targets.push(index);
+                                if units.get(&index).is_some() {
+                                    break;
+                                }
+                            }
+                            if right_direction {
+                                final_target = Some(targets[targets.len() - 1]);
+                            }
+                        }
+                    }
+                }
+
+                if let Some(target) = final_target {
+                    if let Some(unit) = units.get_mut(&target) {
+                        unit.life.lose_life(1);
+                    }
+                }
+            },
+            t => {
+                log!("unknown action: {:?}", t);
+                if let Some(unit) = units.get_mut(target) {
+                    unit.life.lose_life(1);
+                }
+            }
         }
     }
 
@@ -56,7 +95,7 @@ impl Attack {
     }
 
     #[allow(clippy::cognitive_complexity)]
-    pub fn get_potential_targets(&self, _map: &Map, _units: &Units, position: &HexIndex) -> Vec<HexIndex> {
+    pub fn get_potential_targets(&self, _map: &Map, units: &Units, position: &HexIndex) -> Vec<HexIndex> {
         match self {
             Attack::Heal => {
                 let mut targets = Vec::new();
@@ -105,42 +144,21 @@ impl Attack {
             }
             Attack::VolleyOfArrows => {
                 let mut targets = Vec::new();
-                if let Some(index) = position.get_top_left_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_top_left_neighbour() {
+
+                for direction in Direction::iter() {
+                    if let Some(index) = position.get_neighbour(&direction) {
                         targets.push(index);
+                        if units.get(&index).is_none() {
+                            while let Some(index) = targets[targets.len() - 1].get_neighbour(&direction) {
+                                targets.push(index);
+                                if units.get(&index).is_some() {
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
-                if let Some(index) = position.get_top_right_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_top_right_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                if let Some(index) = position.get_right_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_right_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                if let Some(index) = position.get_bottom_right_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_bottom_right_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                if let Some(index) = position.get_bottom_left_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_bottom_left_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                if let Some(index) = position.get_left_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_left_neighbour() {
-                        targets.push(index);
-                    }
-                }
+
                 targets
             }
         }        
@@ -215,7 +233,35 @@ impl Attack {
                 vec![]
             },
             Attack::VolleyOfArrows => {
-                unimplemented!();
+                let mut final_target = None;
+                let mut final_direction = None;
+                
+                for direction in Direction::iter() {
+                    let mut targets = Vec::new();
+                    let mut right_direction = false;
+                    if let Some(index) = position.get_neighbour(&direction) {
+                        if &index == target {
+                            right_direction = true;
+                        }
+                        targets.push(index);
+                        if units[index.get_index()].is_none() {
+                            while let Some(index) = targets[targets.len() - 1].get_neighbour(&direction) {
+                                if &index == target {
+                                    right_direction = true;
+                                }
+                                targets.push(index);
+                                if units[index.get_index()].is_some() {
+                                    break;
+                                }
+                            }
+                            if right_direction {
+                                final_target = Some(targets[targets.len() - 1]);
+                                final_direction = Some(direction);
+                            }
+                        }
+                    }
+                }
+                vec![(*position, PrevisualisationItem::LongDistanceShoot(final_target.unwrap())), (final_target.unwrap(), PrevisualisationItem::PushArrow(final_direction.unwrap()))]
             }
         }
         

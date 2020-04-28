@@ -148,15 +148,17 @@ impl<'a> Units<'a> {
                         position,
                         reachable_tiles,
                         action_textboxes,
-                        previsualisation: Previsualisation::Action(actions, target, consequences)
+                        previsualisation: Previsualisation::Action(actions, targets, consequences)
                     }),
                     units,
                     ..
                 } => {
-                    *consequences = if *actions {
+                    *consequences = if *actions && targets.contains(&index) {
                         units[position.get_index()].as_ref().unwrap().attacks.1.get_consequences(&map, units, position, &index)
-                    } else {
+                    } else if targets.contains(&index) {
                         units[position.get_index()].as_ref().unwrap().attacks.0.get_consequences(&map, units, position, &index)
+                    } else {
+                        Vec::new()
                     };
                 }
                 _ => (),
@@ -174,12 +176,12 @@ impl<'a> Units<'a> {
                     self.set(&clicked_tile_idx, Some(selected_unit2));
                     self.selected_unit = None;
                 } else if let Previsualisation::Action(action, targets, consequences) = &selected_unit.previsualisation {
-                    if *action {
-                        let attack = self[&selected_unit.position].attacks.0.clone();
-                        attack.apply(clicked_tile_idx, &mut map, self);
-                    } else {
+                    if *action && targets.contains(&clicked_tile_idx) {
                         let attack = self[&selected_unit.position].attacks.1.clone();
-                        attack.apply(clicked_tile_idx, &mut map, self);
+                        attack.apply(&selected_unit.position.clone(), &clicked_tile_idx, &mut map, self);
+                    } else if targets.contains(&clicked_tile_idx) {
+                        let attack = self[&selected_unit.position].attacks.0.clone();
+                        attack.apply(&selected_unit.position.clone(), &clicked_tile_idx, &mut map, self);
                     }
                     self.selected_unit.as_mut().unwrap().previsualisation = Previsualisation::Movement(None);
                 }

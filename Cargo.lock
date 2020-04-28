@@ -141,6 +141,7 @@ dependencies = [
  "arr_macro",
  "console_error_panic_hook",
  "futures",
+ "js-sys",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-game-lib",
