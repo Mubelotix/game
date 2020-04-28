@@ -1,4 +1,4 @@
-use crate::{idx::*, map::*, life::*, *};
+use crate::{idx::*, life::*, map::*, *};
 
 pub enum Previsualisation {
     Movement(Option<Vec<HexIndex>>),
@@ -15,7 +15,7 @@ impl Previsualisation {
 }
 
 pub enum PrevisualisationItem {
-    PushArrow(Direction),
+    PushArrow(Direction, bool),
     LongDistanceShoot(HexIndex), // hexindex: target
     LifeChange(Life),
 }
@@ -35,7 +35,7 @@ const PUSH_ARROW_STYLE: LineStyle = LineStyle {
 impl PrevisualisationItem {
     pub fn draw_on_canvas(&self, mut canvas: &mut Canvas, data: &DrawingData) {
         match self {
-            PrevisualisationItem::PushArrow(direction) => {
+            PrevisualisationItem::PushArrow(direction, _cancelled) => {
                 if let Some(point2) = data.position.get_neighbour(direction) {
                     let context = canvas.get_2d_canvas_rendering_context();
                     context.begin_path();
