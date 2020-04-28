@@ -1,5 +1,5 @@
 use crate::{
-    actions::*, idx::HexIndex, life::*, map::*, pathfinder::*, previsualisation::*, textbox::*, *,
+    actions::*, idx::HexIndex, life::*, map::*, pathfinder::*, previsualisation::*, textbox::*, button::*, *,
 };
 use arr_macro::arr;
 use std::convert::TryInto;
@@ -40,6 +40,7 @@ pub struct Unit {
     pub remaining_moves: usize,
     pub attacks: (Attack, Attack),
     pub life: Life,
+    pub action_remaining: bool,
 }
 
 impl Unit {
@@ -47,6 +48,7 @@ impl Unit {
         Unit {
             remaining_moves: unit_type.moves_per_turn(),
             life: Life::new(&unit_type),
+            action_remaining: true,
             attacks: match unit_type {
                 UnitType::Archer => (Attack::VolleyOfArrows, Attack::Heal),
                 UnitType::Scout => (Attack::StickKnock, Attack::Heal),
@@ -103,16 +105,18 @@ pub struct Units<'a> {
     overground: [&'a Image; 2],
     margin: usize,
     line_style: LineStyle,
+    next_turn_button: Button<'a>,
     selected_unit: Option<SelectedUnit<'a>>,
 }
 
 impl<'a> Units<'a> {
-    pub fn new(textures: [&'a Image; 4], overground: [&'a Image; 2], margin: usize) -> Units<'a> {
+    pub fn new(textures: [&'a Image; 4], overground: [&'a Image; 2], margin: usize, arial: &'a Font) -> Units<'a> {
         Units {
             units: arr!(None;61),
             textures,
             margin,
             overground,
+            next_turn_button: Button::new((10.0, 10.0), None, &arial, String::from("Next turn")),
             line_style: LineStyle {
                 cap: LineCap::Round,
                 color: Color::new(66, 135, 245),
@@ -222,6 +226,7 @@ impl<'a> Units<'a> {
             units,
             selected_unit:
                 Some(SelectedUnit {
+                    position,
                     previsualisation: Previsualisation::Action(_action, targets, consequences),
                     ..
                 }),
@@ -230,8 +235,12 @@ impl<'a> Units<'a> {
         {
             if targets.contains(&target) {
                 Attack::apply(consequences.split_off(0), &mut map, units);
+                units[position.get_index()]
+                    .as_mut()
+                    .unwrap()
+                    .action_remaining = false;
+                self.selected_unit = None;
             }
-            self.selected_unit = None;
         }
     }
 
@@ -272,12 +281,13 @@ impl<'a> Units<'a> {
         });
     }
 
-    pub fn handle_action_selection(&mut self, mouse_position: (u32, u32), map: &Map) {
+    pub fn action_selection(&mut self, mouse_position: (u32, u32), map: &Map) -> bool {
         if let Some(selected_unit) = &self.selected_unit {
             if selected_unit
                 .action_textboxes
                 .0
                 .is_hover_with_mouse_position(mouse_position)
+                && self[&self.selected_unit.as_ref().unwrap().position].action_remaining
             {
                 let targets = self[&selected_unit.position]
                     .attacks
@@ -285,10 +295,12 @@ impl<'a> Units<'a> {
                     .get_potential_targets(&map, &self, &selected_unit.position);
                 self.selected_unit.as_mut().unwrap().previsualisation =
                     Previsualisation::Action(false, targets, Vec::new());
+                true
             } else if selected_unit
                 .action_textboxes
                 .1
                 .is_hover_with_mouse_position(mouse_position)
+                && self[&self.selected_unit.as_ref().unwrap().position].action_remaining
             {
                 let targets = self[&selected_unit.position]
                     .attacks
@@ -296,7 +308,24 @@ impl<'a> Units<'a> {
                     .get_potential_targets(&map, &self, &selected_unit.position);
                 self.selected_unit.as_mut().unwrap().previsualisation =
                     Previsualisation::Action(true, targets, Vec::new());
+                true
+            } else {
+                false
             }
+        } else {
+            false
+        }
+    }
+
+    pub fn next_turn(&mut self, mouse_position: (u32, u32)) -> bool {
+        if self.next_turn_button.is_hover_with_mouse_position(mouse_position) {
+            for unit in self.units.iter_mut().filter_map(|u| u.as_mut()) {
+                unit.remaining_moves = unit.unit_type.moves_per_turn();
+                unit.action_remaining = true;
+            }
+            true
+        } else {
+            false
         }
     }
 
@@ -323,8 +352,8 @@ impl<'a> Units<'a> {
             } else if self.get(&clicked_tile_idx).is_some() {
                 self.select_unit(clicked_tile_idx, canvas, arial, map);
             }
-        } else if self.selected_unit.is_some() {
-            self.handle_action_selection((x, y), map);
+        } else if !self.action_selection((x, y), map) {
+            self.next_turn((x, y));
         }
     }
 }
@@ -475,5 +504,7 @@ impl<'a> Drawable for Units<'a> {
             canvas.draw(&selected_unit.action_textboxes.0);
             canvas.draw(&selected_unit.action_textboxes.1);
         }
+
+        canvas.draw(&self.next_turn_button);
     }
 }

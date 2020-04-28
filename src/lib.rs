@@ -87,10 +87,9 @@ pub async fn start() -> Result<(), JsValue> {
         (width as usize, height as usize),
         margin,
     );
-    let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]], [&t[17], &t[18]], margin);
     let arial = Font::arial();
-    let next_turn_button = Button::new((10.0, 10.0), None, &arial, String::from("Next turn"));
-
+    let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]], [&t[17], &t[18]], margin, &arial);
+    
     units.set(&3.try_into().unwrap(), Some(Unit::new(UnitType::Archer)));
     units.set(&4.try_into().unwrap(), Some(Unit::new(UnitType::Scout)));
     units.set(&5.try_into().unwrap(), Some(Unit::new(UnitType::Knight)));
@@ -155,7 +154,6 @@ pub async fn start() -> Result<(), JsValue> {
         canvas.clear_with_black();
         canvas.draw(&map);
         canvas.draw(&units);
-        canvas.draw(&next_turn_button);
 
         sleep(Duration::from_millis(16)).await;
     }

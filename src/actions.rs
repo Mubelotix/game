@@ -230,23 +230,29 @@ impl Attack {
                                 ));
                                 consequences.push((
                                     other_pos,
-                                    PrevisualisationItem::LifeChange(other_life.previsualise_loss(1)),
+                                    PrevisualisationItem::LifeChange(
+                                        other_life.previsualise_loss(1),
+                                    ),
                                 ));
-                                consequences
-                                    .push((*target, PrevisualisationItem::PushArrow(direction, true)));
+                                consequences.push((
+                                    *target,
+                                    PrevisualisationItem::PushArrow(direction, true),
+                                ));
                             } else {
                                 consequences.push((
                                     *target,
                                     PrevisualisationItem::LifeChange(life.previsualise_loss(2)),
                                 ));
-                                consequences
-                                    .push((*target, PrevisualisationItem::PushArrow(direction, false)));
+                                consequences.push((
+                                    *target,
+                                    PrevisualisationItem::PushArrow(direction, false),
+                                ));
                             }
                         } else {
                             consequences
                                 .push((*target, PrevisualisationItem::PushArrow(direction, false)));
                         }
-                        
+
                         return consequences;
                     }
                 }
@@ -270,23 +276,31 @@ impl Attack {
                                 ));
                                 consequences.push((
                                     other_pos,
-                                    PrevisualisationItem::LifeChange(other_life.previsualise_loss(1)),
+                                    PrevisualisationItem::LifeChange(
+                                        other_life.previsualise_loss(1),
+                                    ),
                                 ));
-                                consequences
-                                    .push((*target, PrevisualisationItem::PushArrow(!direction, true)));
+                                consequences.push((
+                                    *target,
+                                    PrevisualisationItem::PushArrow(!direction, true),
+                                ));
                             } else {
                                 consequences.push((
                                     *target,
                                     PrevisualisationItem::LifeChange(life.previsualise_loss(2)),
                                 ));
-                                consequences
-                                    .push((*target, PrevisualisationItem::PushArrow(!direction, false)));
+                                consequences.push((
+                                    *target,
+                                    PrevisualisationItem::PushArrow(!direction, false),
+                                ));
                             }
                         } else {
-                            consequences
-                                .push((*target, PrevisualisationItem::PushArrow(!direction, false)));
+                            consequences.push((
+                                *target,
+                                PrevisualisationItem::PushArrow(!direction, false),
+                            ));
                         }
-                        
+
                         return consequences;
                     }
                 }
@@ -339,8 +353,9 @@ impl Attack {
                     .as_ref()
                     .map(|u| &u.life)
                 {
-                    if let Some((other_pos, Some(other_life))) = 
-                        target.get_neighbour(&final_direction.clone().unwrap()).map(|new_pos| {
+                    if let Some((other_pos, Some(other_life))) = target
+                        .get_neighbour(&final_direction.clone().unwrap())
+                        .map(|new_pos| {
                             (
                                 new_pos,
                                 units[new_pos.get_index()].as_ref().map(|u| &u.life),
@@ -375,8 +390,6 @@ impl Attack {
                     *position,
                     PrevisualisationItem::LongDistanceShoot(final_target.unwrap()),
                 ));
-
-                
 
                 return consequences;
             }
