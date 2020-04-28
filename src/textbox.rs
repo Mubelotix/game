@@ -137,6 +137,16 @@ impl<'a> TextBox<'a> {
             && mouse_position.1 < self.coords.1 + self.get_height() as f64
     }
 
+    pub fn is_hover_with_mouse_position(&self, mouse_position: (u32, u32)) -> bool {
+        let mouse_position = (mouse_position.0 as f64, mouse_position.1 as f64);
+        let width = *self.width.borrow() as f64;
+
+        mouse_position.0 > self.coords.0
+            && mouse_position.0 < self.coords.0 + width
+            && mouse_position.1 > self.coords.1
+            && mouse_position.1 < self.coords.1 + self.get_height() as f64
+    }
+
     pub fn is_pressed(&self) -> bool {
         self.is_hover() && is_mouse_pressed()
     }

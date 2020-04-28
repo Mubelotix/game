@@ -286,15 +286,14 @@ impl<'a> Units<'a> {
                 });
             }
         } else if let Some(selected_unit) = &self.selected_unit {
-            // TODO correct delay
-            if selected_unit.action_textboxes.0.is_pressed() {
+            if selected_unit.action_textboxes.0.is_hover_with_mouse_position((x, y)) {
                 let targets = self[&selected_unit.position]
                     .attacks
                     .0
                     .get_potential_targets(&map, &self, &selected_unit.position);
                 self.selected_unit.as_mut().unwrap().previsualisation =
                     Previsualisation::Action(false, targets, Vec::new());
-            } else if selected_unit.action_textboxes.1.is_pressed() {
+            } else if selected_unit.action_textboxes.1.is_hover_with_mouse_position((x, y)) {
                 let targets = self[&selected_unit.position]
                     .attacks
                     .1
