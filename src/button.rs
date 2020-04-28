@@ -42,7 +42,7 @@ impl<'a> Button<'a> {
         }
     }
 
-    pub fn is_pressed(&self) -> bool {
+    pub fn _is_pressed(&self) -> bool {
         let mouse_position = get_mouse_position();
         let mouse_position = (mouse_position.0 as f64, mouse_position.1 as f64);
         let width = self.width.borrow().unwrap();

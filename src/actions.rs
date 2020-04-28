@@ -10,7 +10,7 @@ pub enum Attack {
 }
 
 impl Attack {
-    pub fn apply(&self, position: &HexIndex, target: &HexIndex, map: &mut Map, units: &mut Units) {
+    pub fn apply(&self, position: &HexIndex, target: &HexIndex, _map: &mut Map, units: &mut Units) {
         match self {
             Attack::VolleyOfArrows => {
                 let mut final_target = None;
@@ -67,7 +67,7 @@ impl Attack {
         }
     }
 
-    pub fn get_name(&self) -> &'static str {
+    pub fn _get_name(&self) -> &'static str {
         match self {
             Attack::StickKnock => "Stick Knock",
             Attack::VolleyOfArrows => "Volley of Arrows",
@@ -77,11 +77,11 @@ impl Attack {
         }
     }
 
-    pub fn get_icon_idx(&self) -> usize {
+    pub fn _get_icon_idx(&self) -> usize {
         unimplemented!();
     }
 
-    pub fn can_be_used_by_unit(&self, unit: &UnitType) -> bool {
+    pub fn _can_be_used_by_unit(&self, unit: &UnitType) -> bool {
         match self {
             Attack::StickKnock => true,
             Attack::Heal => true,
@@ -175,7 +175,7 @@ impl Attack {
 
     pub fn get_consequences(
         &self,
-        map: &Map,
+        _map: &Map,
         units: &[Option<Unit>; 61],
         position: &HexIndex,
         target: &HexIndex,

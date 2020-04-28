@@ -177,10 +177,9 @@ impl<'a> Units<'a> {
                     selected_unit:
                         Some(SelectedUnit {
                             position,
-                            reachable_tiles,
-                            action_textboxes,
                             previsualisation:
                                 Previsualisation::Action(actions, targets, consequences),
+                            ..
                         }),
                     units,
                     ..
@@ -232,7 +231,7 @@ impl<'a> Units<'a> {
                         selected_unit.reachable_tiles[clicked_tile_idx.get_index()].unwrap();
                     self.set(&clicked_tile_idx, Some(selected_unit2));
                     self.selected_unit = None;
-                } else if let Previsualisation::Action(action, targets, consequences) =
+                } else if let Previsualisation::Action(action, targets, _consequences) =
                     &selected_unit.previsualisation
                 {
                     if *action && targets.contains(&clicked_tile_idx) {
