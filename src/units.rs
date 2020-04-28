@@ -30,15 +30,6 @@ impl UnitType {
             UnitType::Barbarian => 3
         }
     }
-
-    pub fn max_life_points(&self) -> usize {
-        match self {
-            UnitType::Archer => 2,
-            UnitType::Knight => 4,
-            UnitType::Scout => 3,
-            UnitType::Barbarian => 3,
-        }
-    }
 }
 
 #[derive(PartialEq)]
@@ -133,7 +124,7 @@ impl Attack {
         }
     }
 
-    pub fn get_potential_targets(&self, map: &Map, position: &HexIndex) -> Vec<HexIndex> {
+    pub fn get_potential_targets(&self, _map: &Map, position: &HexIndex) -> Vec<HexIndex> {
         match self {
             Attack::Heal => {
                 let mut targets = Vec::new();
@@ -224,7 +215,26 @@ impl Attack {
     }
 }
 
-type SelectedUnit<'a> = (HexIndex, Option<Vec<HexIndex>>, [Option<usize>; 61], (TextBox<'a>, TextBox<'a>), Option<(bool, Vec<HexIndex>)>);
+enum Previsualisation {
+    Movement(Option<Vec<HexIndex>>),
+}
+
+impl Previsualisation {
+    pub fn is_movement_some(&self) -> bool {
+        match self {
+            Previsualisation::Movement(r) => r.is_some(),
+            _ => false,
+        }
+    }
+}
+
+struct SelectedUnit<'a> {
+    pub position: HexIndex,
+    pub reachable_tiles: [Option<usize>; 61],
+    pub action_textboxes: (TextBox<'a>, TextBox<'a>),
+    pub selected_action: Option<(bool, Vec<HexIndex>)>,
+    pub previsualisation: Previsualisation,
+}
 
 pub struct Units<'a> {
     units: [Option<Unit>; 61],
@@ -266,27 +276,27 @@ impl<'a> Units<'a> {
 
     pub fn set_margin(&mut self, margin: usize) {
         self.margin = margin;
-        if let Some((_, _, _, textboxes, _)) = &mut self.selected_unit {
-            textboxes.0.set_width(margin - 20);
-            textboxes.1.set_width(margin - 20);
+        if let Some(selected_unit) = &mut self.selected_unit {
+            selected_unit.action_textboxes.0.set_width(margin - 20);
+            selected_unit.action_textboxes.1.set_width(margin - 20);
         }
     }
 
     pub fn handle_resize_event(&mut self, canvas: &mut Canvas) {
         let canvas_height = canvas.get_height() as usize;
-        if let Some((_, _, _, textboxes, _)) = &mut self.selected_unit {
-            textboxes.0.set_y(canvas_height - textboxes.0.get_height());
-            textboxes.1.set_y(canvas_height - textboxes.0.get_height() - textboxes.1.get_height());
+        if let Some(selected_unit) = &mut self.selected_unit {
+            selected_unit.action_textboxes.0.set_y(canvas_height - selected_unit.action_textboxes.0.get_height());
+            selected_unit.action_textboxes.1.set_y(canvas_height - selected_unit.action_textboxes.0.get_height() - selected_unit.action_textboxes.1.get_height());
         }
     }
 
     pub fn handle_mouse_move(&mut self, map: &Map, x: u32, y: u32) {
-        if let Some((unit, _route, _reachable, _textboxes, _selected_action)) = &self.selected_unit {
+        if let Some(_selected_unit) = &self.selected_unit {
             let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
             if let Some(index) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
-                self.selected_unit.as_mut().unwrap().1 = find_route(&self.selected_unit.as_ref().unwrap().2, *unit, index);
+                self.selected_unit.as_mut().unwrap().previsualisation = Previsualisation::Movement(find_route(&self.selected_unit.as_ref().unwrap().reachable_tiles, self.selected_unit.as_ref().unwrap().position, index));
             } else {
-                self.selected_unit.as_mut().unwrap().1 = None;
+                self.selected_unit.as_mut().unwrap().previsualisation = Previsualisation::Movement(None);
             }
         }
     }
@@ -294,21 +304,21 @@ impl<'a> Units<'a> {
     pub fn handle_mouse_click(&mut self, mut map: &mut Map, x: u32, y: u32, arial: &'a Font, mut canvas: &mut Canvas) {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
         if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
-            if let Some((selected_unit_idx, route, reachable, textboxes, selected_action)) = &self.selected_unit { // if a unit is selected
-                if selected_action.is_none() && (self.get(&clicked_tile_idx).is_none() || clicked_tile_idx == *selected_unit_idx) && route.is_some() {
-                    let mut selected_unit = self.units[selected_unit_idx.get_index()].take().unwrap();
-                    selected_unit.remaining_moves -= reachable[clicked_tile_idx.get_index()].unwrap();
-                    self.set(&clicked_tile_idx, Some(selected_unit));
+            if let Some(selected_unit) = &self.selected_unit { // if a unit is selected
+                if selected_unit.selected_action.is_none() && (self.get(&clicked_tile_idx).is_none() || clicked_tile_idx == selected_unit.position) && selected_unit.previsualisation.is_movement_some() {
+                    let mut selected_unit2 = self.units[selected_unit.position.get_index()].take().unwrap();
+                    selected_unit2.remaining_moves -= selected_unit.reachable_tiles[clicked_tile_idx.get_index()].unwrap();
+                    self.set(&clicked_tile_idx, Some(selected_unit2));
                     self.selected_unit = None;
-                } else if let Some((action, targets)) = selected_action {
+                } else if let Some((action, _targets)) = &selected_unit.selected_action {
                     if *action {
-                        let attack = self[selected_unit_idx].attacks.0.clone();
+                        let attack = self[&selected_unit.position].attacks.0.clone();
                         attack.apply(clicked_tile_idx, &mut map, self);
                     } else {
-                        let attack = self[selected_unit_idx].attacks.1.clone();
+                        let attack = self[&selected_unit.position].attacks.1.clone();
                         attack.apply(clicked_tile_idx, &mut map, self);
                     }
-                    self.selected_unit.as_mut().unwrap().4 = None;
+                    self.selected_unit.as_mut().unwrap().selected_action = None;
                 }
             } else if self.get(&clicked_tile_idx).is_some() { // if no unit is selected but a unit has been clicked
                 let canvas_height = canvas.get_height() as usize;
@@ -318,16 +328,22 @@ impl<'a> Units<'a> {
                 t2.init(&mut canvas);
                 t2.set_y(canvas_height - t2.get_height());
                 t1.set_y(canvas_height - t2.get_height() - t1.get_height());
-                self.selected_unit = Some((clicked_tile_idx, None, compute_travel_time(&self, &map, clicked_tile_idx, self[&clicked_tile_idx].get_remaining_moves()), (t1, t2), None));
+                self.selected_unit = Some(SelectedUnit {
+                    position: clicked_tile_idx,
+                    previsualisation: Previsualisation::Movement(None),
+                    reachable_tiles: compute_travel_time(&self, &map, clicked_tile_idx, self[&clicked_tile_idx].get_remaining_moves()),
+                    action_textboxes: (t1, t2),
+                    selected_action: None,
+                });
             }
-        } else if let Some((selected_unit_idx, _, _, textboxes, _)) = &self.selected_unit {
+        } else if let Some(selected_unit) = &self.selected_unit {
             // TODO correct delay
-            if textboxes.0.is_pressed() {
-                let targets = self[selected_unit_idx].attacks.0.get_potential_targets(&map, selected_unit_idx);
-                self.selected_unit.as_mut().unwrap().4 = Some((false, targets));
-            } else if textboxes.1.is_pressed() {
-                let targets = self[selected_unit_idx].attacks.1.get_potential_targets(&map, selected_unit_idx);
-                self.selected_unit.as_mut().unwrap().4 = Some((true, targets));
+            if selected_unit.action_textboxes.0.is_pressed() {
+                let targets = self[&selected_unit.position].attacks.0.get_potential_targets(&map, &selected_unit.position);
+                self.selected_unit.as_mut().unwrap().selected_action = Some((false, targets));
+            } else if selected_unit.action_textboxes.1.is_pressed() {
+                let targets = self[&selected_unit.position].attacks.1.get_potential_targets(&map, &selected_unit.position);
+                self.selected_unit.as_mut().unwrap().selected_action = Some((true, targets));
             }
         }
     } 
@@ -370,11 +386,11 @@ impl<'a> Drawable for Units<'a> {
             unit.draw_on_canvas(&mut canvas, &DrawingData {position: &idx.try_into().unwrap(), ..drawing_data}, self.textures);
         }
 
-        if let Some((start, route, reachable_tiles, textboxes, selected_action)) = &self.selected_unit {
+        if let Some(selected_unit) = &self.selected_unit {
             let canvas_width = canvas.get_width();
             let canvas_height = canvas.get_height();
 
-            if let Some((action, targets)) = selected_action {
+            if let Some((_action, targets)) = &selected_unit.selected_action {
                 for target in targets {
                     let (x, y) = target.get_canvas_coords();
                     let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize, y as isize);
@@ -382,11 +398,11 @@ impl<'a> Drawable for Units<'a> {
                     canvas.get_2d_canvas_rendering_context().draw_image_with_html_image_element_and_dw_and_dh(self.overground[1].get_html_element(), x as f64, y as f64, 256.0 * factor, 384.0 * factor).unwrap();
                 }
             } else {
-                if let Some(route) = route {
+                if let Previsualisation::Movement(Some(route)) = &selected_unit.previsualisation {
                     let context = canvas.get_2d_canvas_rendering_context();
                     context.begin_path();
     
-                    let (x, y) = start.get_canvas_coords();
+                    let (x, y) = selected_unit.position.get_canvas_coords();
                     let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize + 128, y as isize + 256);
                     context.move_to(x as f64, y as f64);
     
@@ -402,7 +418,7 @@ impl<'a> Drawable for Units<'a> {
                     canvas.get_2d_canvas_rendering_context().stroke();
                 }
     
-                for reachable_tile in reachable_tiles.iter().enumerate().filter(|v| v.1.is_none()).map(|v| {
+                for reachable_tile in selected_unit.reachable_tiles.iter().enumerate().filter(|v| v.1.is_none()).map(|v| {
                     let v: HexIndex = v.0.try_into().unwrap();
                     v
                 }) {
@@ -413,8 +429,8 @@ impl<'a> Drawable for Units<'a> {
                 }
             }
 
-            canvas.draw(&textboxes.0);
-            canvas.draw(&textboxes.1);
+            canvas.draw(&selected_unit.action_textboxes.0);
+            canvas.draw(&selected_unit.action_textboxes.1);
         }
     }
 }
