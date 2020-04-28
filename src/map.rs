@@ -1,6 +1,6 @@
-use wasm_game_lib::graphics::{drawable::*, canvas::Canvas, image::*, color::*};
-use crate::{random::get_random, units::*, idx::HexIndex};
+use crate::{idx::HexIndex, random::get_random, units::*};
 use arr_macro::arr;
+use wasm_game_lib::graphics::{canvas::Canvas, color::*, drawable::*, image::*};
 
 fn idx_to_y(idx: usize) -> usize {
     if idx < 5 {
@@ -51,9 +51,8 @@ fn idx_to_coords(idx: usize) -> (usize, usize) {
 }
 
 const TEXTURES_NUMBER: usize = 17;
-pub const CANVAS_WIDTH: f64 = 9.0*253.0;
-pub const CANVAS_HEIGHT: f64 = 8.0*256.0 + 10.0;
-
+pub const CANVAS_WIDTH: f64 = 9.0 * 253.0;
+pub const CANVAS_HEIGHT: f64 = 8.0 * 256.0 + 10.0;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Tile {
@@ -83,7 +82,11 @@ pub struct Map<'a> {
 
 impl<'a> Map<'a> {
     #[allow(clippy::cognitive_complexity)]
-    pub fn new(textures: [&'a Image; TEXTURES_NUMBER], dimensions: (usize, usize), margin: usize) -> Map {
+    pub fn new(
+        textures: [&'a Image; TEXTURES_NUMBER],
+        dimensions: (usize, usize),
+        margin: usize,
+    ) -> Map {
         let mut canvas = Canvas::new();
         canvas.set_width(CANVAS_WIDTH as u32);
         canvas.set_height(CANVAS_HEIGHT as u32);
@@ -98,7 +101,7 @@ impl<'a> Map<'a> {
             }); 61);
 
         let mut map = Map {
-            coords: (0,0),
+            coords: (0, 0),
             tiles,
             textures,
             canvas,
@@ -121,13 +124,25 @@ impl<'a> Map<'a> {
                 2 | 6 => 2,
                 3 | 5 => 1,
                 4 => 0,
-                _ => panic!("can't happen")
+                _ => panic!("can't happen"),
             } * 128;
-            
-            self.canvas.draw_image(((offset + screen_coords.0) as f64, screen_coords.1 as f64), self.textures[tile.get_texture_idx() as usize]);
 
-            if coords.1 == 8 || (coords.0 == 0 && coords.1 >= 4) || (coords.1 >= 4 && (idx_to_y(idx) != idx_to_y(idx+1))) {
-                self.canvas.draw_image(((offset + screen_coords.0) as f64, screen_coords.1 as f64 + 318.45), self.textures[12]);
+            self.canvas.draw_image(
+                ((offset + screen_coords.0) as f64, screen_coords.1 as f64),
+                self.textures[tile.get_texture_idx() as usize],
+            );
+
+            if coords.1 == 8
+                || (coords.0 == 0 && coords.1 >= 4)
+                || (coords.1 >= 4 && (idx_to_y(idx) != idx_to_y(idx + 1)))
+            {
+                self.canvas.draw_image(
+                    (
+                        (offset + screen_coords.0) as f64,
+                        screen_coords.1 as f64 + 318.45,
+                    ),
+                    self.textures[12],
+                );
             }
         }
     }
@@ -145,10 +160,18 @@ impl<'a> Map<'a> {
         let fitting_height = CANVAS_HEIGHT * smaller_factor;
         let remaining_width = (self.dimensions.0 - self.margin) as f64 - fitting_width;
         let remaining_height = self.dimensions.1 as f64 - fitting_height;
-        (((x as f64 - remaining_width / 2.0) / smaller_factor) as isize, ((y as f64 - remaining_height / 2.0) / smaller_factor) as isize)
+        (
+            ((x as f64 - remaining_width / 2.0) / smaller_factor) as isize,
+            ((y as f64 - remaining_height / 2.0) / smaller_factor) as isize,
+        )
     }
 
-    pub fn internal_coords_to_screen_coords(dimensions: (u32, u32), margin: usize, x: isize, y: isize) -> (usize, usize) {
+    pub fn internal_coords_to_screen_coords(
+        dimensions: (u32, u32),
+        margin: usize,
+        x: isize,
+        y: isize,
+    ) -> (usize, usize) {
         let factor_width: f64 = (dimensions.0 as usize - margin) as f64 / CANVAS_WIDTH;
         let factor_height = dimensions.1 as f64 / CANVAS_HEIGHT;
         let smaller_factor = if factor_width < factor_height {
@@ -162,9 +185,9 @@ impl<'a> Map<'a> {
         let remaining_height = dimensions.1 as f64 - fitting_height;
 
         let mut x = x as f64 * smaller_factor;
-        x += remaining_width/2.0;
+        x += remaining_width / 2.0;
         let mut y = y as f64 * smaller_factor;
-        y += remaining_height/2.0;
+        y += remaining_height / 2.0;
 
         (x as usize + margin, y as usize)
     }
@@ -185,7 +208,15 @@ impl<'a> Drawable for Map<'a> {
         let remaining_height = self.dimensions.1 as f64 - fitting_height;
 
         let canvas_element = canvas.get_2d_canvas_rendering_context();
-        canvas_element.draw_image_with_html_canvas_element_and_dw_and_dh(self.canvas.get_canvas_element(), self.coords.0 as f64 + remaining_width / 2.0 + self.margin as f64, self.coords.1 as f64 + remaining_height / 2.0, fitting_width, fitting_height).unwrap();
+        canvas_element
+            .draw_image_with_html_canvas_element_and_dw_and_dh(
+                self.canvas.get_canvas_element(),
+                self.coords.0 as f64 + remaining_width / 2.0 + self.margin as f64,
+                self.coords.1 as f64 + remaining_height / 2.0,
+                fitting_width,
+                fitting_height,
+            )
+            .unwrap();
     }
 }
 
@@ -210,12 +241,19 @@ pub enum Direction {
     Right,
     BottomRight,
     BottomLeft,
-    Left
+    Left,
 }
 
 impl Direction {
     // Fake iter over the 6 directions
     pub fn iter() -> Vec<Direction> {
-        vec![Direction::TopLeft, Direction::TopRight, Direction::Right, Direction::BottomRight, Direction::BottomLeft, Direction::Left]
+        vec![
+            Direction::TopLeft,
+            Direction::TopRight,
+            Direction::Right,
+            Direction::BottomRight,
+            Direction::BottomLeft,
+            Direction::Left,
+        ]
     }
 }

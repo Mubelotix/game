@@ -5,24 +5,35 @@ macro_rules! log {
     }
 }
 
+use std::convert::TryInto;
+use std::time::Duration;
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_game_lib::graphics::image::Image;
 use wasm_game_lib::graphics::sprite::Sprite;
-use wasm_game_lib::inputs::{event::Event, keyboard::*, mouse::*};
-use wasm_game_lib::graphics::{window::*, canvas::*, color::*, font::*};
+use wasm_game_lib::graphics::{canvas::*, color::*, font::*, window::*};
 use wasm_game_lib::inputs::{event::types::*, mouse::*};
+use wasm_game_lib::inputs::{event::Event, keyboard::*, mouse::*};
 use wasm_game_lib::system::sleep;
-use std::time::Duration;
-use std::convert::TryInto;
 use web_sys;
-mod loader; mod map; mod random; mod units; mod pathfinder; mod button; mod idx; mod progress_bar; mod textbox; mod life; mod actions; mod previsualisation;
+mod actions;
+mod button;
+mod idx;
+mod life;
+mod loader;
+mod map;
+mod pathfinder;
+mod previsualisation;
+mod progress_bar;
+mod random;
+mod textbox;
+mod units;
+use button::*;
+use idx::*;
 use loader::load_images;
 use map::*;
-use units::*;
-use idx::*;
 use pathfinder::*;
-use button::*;
 use textbox::*;
+use units::*;
 
 pub struct DrawingData<'a> {
     pub margin: usize,
@@ -37,17 +48,49 @@ pub async fn start() -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
     start_recording_mouse_events();
 
-    let (mut window, mut canvas) = Window::init_with_events(KEYBOARD_EVENT + RESIZE_EVENT + MOUSE_EVENT);
-    let t = load_images(vec!["textures/plains/grassy_plain1", "textures/plains/grassy_plain2", "textures/plains/grassy_plain3", "textures/plains/grassy_plain4", "textures/forest/forest1", "textures/forest/forest2", "textures/forest/forest3", "textures/forest/forest4", "textures/plains/plain1", "textures/plains/plain2", "textures/plains/plain3", "textures/plains/plain4", "textures/underground/dirt", "units/archer.png", "units/knight.png", "units/scout.png", "units/barbarian.png", "textures/shadow.png", "textures/red.png"], &mut canvas).await;
+    let (mut window, mut canvas) =
+        Window::init_with_events(KEYBOARD_EVENT + RESIZE_EVENT + MOUSE_EVENT);
+    let t = load_images(
+        vec![
+            "textures/plains/grassy_plain1",
+            "textures/plains/grassy_plain2",
+            "textures/plains/grassy_plain3",
+            "textures/plains/grassy_plain4",
+            "textures/forest/forest1",
+            "textures/forest/forest2",
+            "textures/forest/forest3",
+            "textures/forest/forest4",
+            "textures/plains/plain1",
+            "textures/plains/plain2",
+            "textures/plains/plain3",
+            "textures/plains/plain4",
+            "textures/underground/dirt",
+            "units/archer.png",
+            "units/knight.png",
+            "units/scout.png",
+            "units/barbarian.png",
+            "textures/shadow.png",
+            "textures/red.png",
+        ],
+        &mut canvas,
+    )
+    .await;
 
     let mut margin = canvas.get_width() as usize / 5;
     let mut arrows = (false, false, false, false);
     let (mut width, mut height) = (window.get_width(), window.get_height());
-    let mut map = Map::new([&t[0], &t[1], &t[2], &t[3], &t[4], &t[5], &t[6], &t[7], &t[8], &t[9], &t[10], &t[11], &t[12], &t[13], &t[14], &t[15], &t[16]], (width as usize, height as usize), margin);
+    let mut map = Map::new(
+        [
+            &t[0], &t[1], &t[2], &t[3], &t[4], &t[5], &t[6], &t[7], &t[8], &t[9], &t[10], &t[11],
+            &t[12], &t[13], &t[14], &t[15], &t[16],
+        ],
+        (width as usize, height as usize),
+        margin,
+    );
     let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]], [&t[17], &t[18]], margin);
     let arial = Font::arial();
     let next_turn_button = Button::new((10.0, 10.0), None, &arial, String::from("Next turn"));
-    
+
     units.set(&3.try_into().unwrap(), Some(Unit::new(UnitType::Archer)));
     units.set(&4.try_into().unwrap(), Some(Unit::new(UnitType::Scout)));
     units.set(&5.try_into().unwrap(), Some(Unit::new(UnitType::Knight)));
@@ -70,8 +113,8 @@ pub async fn start() -> Result<(), JsValue> {
                         Key::DownArrow => arrows.2 = false,
                         Key::LeftArrow => arrows.3 = false,
                         _ => (),
-                    }
-                }
+                    },
+                },
                 Event::ResizeEvent(w, h) => {
                     width = w;
                     height = h;
@@ -91,15 +134,23 @@ pub async fn start() -> Result<(), JsValue> {
                         units.handle_mouse_click(&mut map, x, y, &arial, &mut canvas);
                     }
                     _ => (),
-                }
-                event => log!("{:?}", event)
+                },
+                event => log!("{:?}", event),
             }
         }
 
-        if arrows.0 { map.coords.1 += 3; }
-        if arrows.1 { map.coords.0 -= 3; }
-        if arrows.2 { map.coords.1 -= 3; }
-        if arrows.3 { map.coords.0 += 3; }
+        if arrows.0 {
+            map.coords.1 += 3;
+        }
+        if arrows.1 {
+            map.coords.0 -= 3;
+        }
+        if arrows.2 {
+            map.coords.1 -= 3;
+        }
+        if arrows.3 {
+            map.coords.0 += 3;
+        }
 
         canvas.clear_with_black();
         canvas.draw(&map);

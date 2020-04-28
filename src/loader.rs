@@ -1,8 +1,15 @@
-use wasm_bindgen::JsValue;
-use wasm_game_lib::{graphics::{image::*, canvas::*, font::*, text::*, color::*}, system::sleep};
-use futures::{channel::{oneshot::Receiver, oneshot}, join, future::join_all};
 use crate::progress_bar::ProgressBar;
+use futures::{
+    channel::{oneshot, oneshot::Receiver},
+    future::join_all,
+    join,
+};
 use std::time::Duration;
+use wasm_bindgen::JsValue;
+use wasm_game_lib::{
+    graphics::{canvas::*, color::*, font::*, image::*, text::*},
+    system::sleep,
+};
 
 pub async fn load_images(images: Vec<&str>, mut canvas: &mut Canvas) -> Vec<Image> {
     let mut receivers = Vec::new();

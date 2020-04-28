@@ -1,12 +1,12 @@
 use crate::actions::Attack;
-use wasm_game_lib::graphics::text::*;
-use wasm_game_lib::graphics::drawable::*;
-use wasm_game_lib::graphics::canvas::*;
-use wasm_game_lib::graphics::font::*;
-use wasm_game_lib::graphics::color::*;
-use wasm_bindgen::JsValue;
-use wasm_game_lib::inputs::mouse::{get_mouse_position, is_mouse_pressed};
 use std::cell::RefCell;
+use wasm_bindgen::JsValue;
+use wasm_game_lib::graphics::canvas::*;
+use wasm_game_lib::graphics::color::*;
+use wasm_game_lib::graphics::drawable::*;
+use wasm_game_lib::graphics::font::*;
+use wasm_game_lib::graphics::text::*;
+use wasm_game_lib::inputs::mouse::{get_mouse_position, is_mouse_pressed};
 
 const BOX_STYLE: LineStyle = LineStyle {
     cap: LineCap::Round,
@@ -16,8 +16,8 @@ const BOX_STYLE: LineStyle = LineStyle {
         alpha: 255,
         red: 67,
         green: 75,
-        blue: 96
-    }
+        blue: 96,
+    },
 };
 
 const MARGIN: usize = 10;
@@ -33,16 +33,23 @@ pub struct TextBox<'a> {
 
 impl<'a> TextBox<'a> {
     pub fn new(coords: (f64, f64), width: usize, font: &'a Font, text: &'a str) -> TextBox<'a> {
-        let mut displayed_text = Text::new_with_text_and_coords(&font, String::new(), (coords.0 as usize + MARGIN, coords.1 as usize + MARGIN + FONT_SIZE / 2));
+        let mut displayed_text = Text::new_with_text_and_coords(
+            &font,
+            String::new(),
+            (
+                coords.0 as usize + MARGIN,
+                coords.1 as usize + MARGIN + FONT_SIZE / 2,
+            ),
+        );
         displayed_text.style.color = Color::white();
         displayed_text.character_size = (FONT_SIZE, "px");
-        
+
         TextBox {
             coords,
             width: RefCell::new(width),
             full_message: text.split(' ').collect(),
             displayed_message: RefCell::new((0, Vec::new())),
-            displayed_text: RefCell::new(displayed_text)
+            displayed_text: RefCell::new(displayed_text),
         }
     }
 
@@ -72,7 +79,10 @@ impl<'a> TextBox<'a> {
                 }
                 self.displayed_text.borrow_mut().set_text(displayed_message);
 
-                if *words == self.full_message.len() && self.displayed_text.borrow().get_width(&mut canvas) > width - MARGIN as f64 * 2.0 {
+                if *words == self.full_message.len()
+                    && self.displayed_text.borrow().get_width(&mut canvas)
+                        > width - MARGIN as f64 * 2.0
+                {
                     end_line.push(*words - 2);
                     let mut displayed_message = String::new();
                     for (idx, word) in self.full_message.iter().enumerate() {
@@ -121,7 +131,10 @@ impl<'a> TextBox<'a> {
         let mouse_position = (mouse_position.0 as f64, mouse_position.1 as f64);
         let width = *self.width.borrow() as f64;
 
-        mouse_position.0 > self.coords.0 && mouse_position.0 < self.coords.0 + width && mouse_position.1 > self.coords.1 && mouse_position.1 < self.coords.1 + self.get_height() as f64
+        mouse_position.0 > self.coords.0
+            && mouse_position.0 < self.coords.0 + width
+            && mouse_position.1 > self.coords.1
+            && mouse_position.1 < self.coords.1 + self.get_height() as f64
     }
 
     pub fn is_pressed(&self) -> bool {
@@ -136,9 +149,14 @@ impl<'a> Drawable for TextBox<'a> {
 
         BOX_STYLE.apply_on_canvas(&mut canvas);
         let context = canvas.get_2d_canvas_rendering_context();
-        
+
         context.begin_path();
-        context.stroke_rect(self.coords.0, self.coords.1, width, self.displayed_text.borrow().get_height() as f64 + FONT_SIZE as f64 / 2.0);
+        context.stroke_rect(
+            self.coords.0,
+            self.coords.1,
+            width,
+            self.displayed_text.borrow().get_height() as f64 + FONT_SIZE as f64 / 2.0,
+        );
 
         if self.is_hover() {
             if self.is_pressed() {
@@ -150,7 +168,12 @@ impl<'a> Drawable for TextBox<'a> {
             context.set_fill_style(&JsValue::from_str("rgb(24, 28, 39)"));
         }
 
-        context.fill_rect(self.coords.0, self.coords.1, width, self.displayed_text.borrow().get_height() as f64 + FONT_SIZE as f64 / 2.0);
+        context.fill_rect(
+            self.coords.0,
+            self.coords.1,
+            width,
+            self.displayed_text.borrow().get_height() as f64 + FONT_SIZE as f64 / 2.0,
+        );
         context.stroke();
         canvas.draw(&*self.displayed_text.borrow());
     }

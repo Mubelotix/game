@@ -1,4 +1,4 @@
-use crate::{idx::*, map::*, units::*, previsualisation::*, *};
+use crate::{idx::*, map::*, previsualisation::*, units::*, *};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Attack {
@@ -24,7 +24,9 @@ impl Attack {
                         }
                         targets.push(index);
                         if units.get(&index).is_none() {
-                            while let Some(index) = targets[targets.len() - 1].get_neighbour(&direction) {
+                            while let Some(index) =
+                                targets[targets.len() - 1].get_neighbour(&direction)
+                            {
                                 if &index == target {
                                     right_direction = true;
                                 }
@@ -45,7 +47,7 @@ impl Attack {
                         unit.life.lose_life(1);
                     }
                 }
-            },
+            }
             t => {
                 log!("unknown action: {:?}", t);
                 if let Some(unit) = units.get_mut(target) {
@@ -90,12 +92,17 @@ impl Attack {
             Attack::OffensiveSwordFight | Attack::DefensiveSwordFight => match unit {
                 UnitType::Knight => true,
                 _ => false,
-            }
+            },
         }
     }
 
     #[allow(clippy::cognitive_complexity)]
-    pub fn get_potential_targets(&self, _map: &Map, units: &Units, position: &HexIndex) -> Vec<HexIndex> {
+    pub fn get_potential_targets(
+        &self,
+        _map: &Map,
+        units: &Units,
+        position: &HexIndex,
+    ) -> Vec<HexIndex> {
         match self {
             Attack::Heal => {
                 let mut targets = Vec::new();
@@ -149,7 +156,9 @@ impl Attack {
                     if let Some(index) = position.get_neighbour(&direction) {
                         targets.push(index);
                         if units.get(&index).is_none() {
-                            while let Some(index) = targets[targets.len() - 1].get_neighbour(&direction) {
+                            while let Some(index) =
+                                targets[targets.len() - 1].get_neighbour(&direction)
+                            {
                                 targets.push(index);
                                 if units.get(&index).is_some() {
                                     break;
@@ -161,81 +170,112 @@ impl Attack {
 
                 targets
             }
-        }        
+        }
     }
 
-    pub fn get_consequences(&self, map: &Map, units: &[Option<Unit>; 61], position: &HexIndex, target: &HexIndex) -> Vec<(HexIndex, PrevisualisationItem)> {
+    pub fn get_consequences(
+        &self,
+        map: &Map,
+        units: &[Option<Unit>; 61],
+        position: &HexIndex,
+        target: &HexIndex,
+    ) -> Vec<(HexIndex, PrevisualisationItem)> {
         match self {
             Attack::StickKnock => {
                 if Some(*target) == position.get_neighbour(&Direction::TopLeft) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopLeft))]
+                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopLeft))];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::TopRight) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopRight))]
+                    return vec![(
+                        *target,
+                        PrevisualisationItem::PushArrow(Direction::TopRight),
+                    )];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::Right) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Right))]
+                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Right))];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::BottomRight) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::BottomRight))]
+                    return vec![(
+                        *target,
+                        PrevisualisationItem::PushArrow(Direction::BottomRight),
+                    )];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::BottomLeft) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::BottomLeft))]
+                    return vec![(
+                        *target,
+                        PrevisualisationItem::PushArrow(Direction::BottomLeft),
+                    )];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::Left) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Left))]
+                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Left))];
                 }
                 vec![]
-            },
+            }
             Attack::DefensiveSwordFight => {
                 if Some(*target) == position.get_neighbour(&Direction::TopLeft) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopLeft))]
+                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopLeft))];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::TopRight) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopRight))]
+                    return vec![(
+                        *target,
+                        PrevisualisationItem::PushArrow(Direction::TopRight),
+                    )];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::Right) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Right))]
+                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Right))];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::BottomRight) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::BottomRight))]
+                    return vec![(
+                        *target,
+                        PrevisualisationItem::PushArrow(Direction::BottomRight),
+                    )];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::BottomLeft) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::BottomLeft))]
+                    return vec![(
+                        *target,
+                        PrevisualisationItem::PushArrow(Direction::BottomLeft),
+                    )];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::Left) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Left))]
+                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Left))];
                 }
                 vec![]
-            },
+            }
             Attack::OffensiveSwordFight => {
                 if Some(*target) == position.get_neighbour(&Direction::TopLeft) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::BottomRight))]
+                    return vec![(
+                        *target,
+                        PrevisualisationItem::PushArrow(Direction::BottomRight),
+                    )];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::TopRight) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::BottomLeft))]
+                    return vec![(
+                        *target,
+                        PrevisualisationItem::PushArrow(Direction::BottomLeft),
+                    )];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::Right) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Left))]
+                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Left))];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::BottomRight) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopLeft))]
+                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopLeft))];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::BottomLeft) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopRight))]
+                    return vec![(
+                        *target,
+                        PrevisualisationItem::PushArrow(Direction::TopRight),
+                    )];
                 }
                 if Some(*target) == position.get_neighbour(&Direction::Left) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Right))]
+                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Right))];
                 }
                 vec![]
-            },
-            Attack::Heal => {
-                vec![]
-            },
+            }
+            Attack::Heal => vec![],
             Attack::VolleyOfArrows => {
                 let mut final_target = None;
                 let mut final_direction = None;
-                
+
                 for direction in Direction::iter() {
                     let mut targets = Vec::new();
                     let mut right_direction = false;
@@ -245,7 +285,9 @@ impl Attack {
                         }
                         targets.push(index);
                         if units[index.get_index()].is_none() {
-                            while let Some(index) = targets[targets.len() - 1].get_neighbour(&direction) {
+                            while let Some(index) =
+                                targets[targets.len() - 1].get_neighbour(&direction)
+                            {
                                 if &index == target {
                                     right_direction = true;
                                 }
@@ -261,10 +303,17 @@ impl Attack {
                         }
                     }
                 }
-                vec![(*position, PrevisualisationItem::LongDistanceShoot(final_target.unwrap())), (final_target.unwrap(), PrevisualisationItem::PushArrow(final_direction.unwrap()))]
+                vec![
+                    (
+                        *position,
+                        PrevisualisationItem::LongDistanceShoot(final_target.unwrap()),
+                    ),
+                    (
+                        final_target.unwrap(),
+                        PrevisualisationItem::PushArrow(final_direction.unwrap()),
+                    ),
+                ]
             }
         }
-        
-        
     }
 }
