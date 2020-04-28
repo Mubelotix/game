@@ -207,93 +207,105 @@ impl<'a> Units<'a> {
         }
     }
 
-    pub fn handle_mouse_click(
-        &mut self,
-        mut map: &mut Map,
-        x: u32,
-        y: u32,
-        arial: &'a Font,
-        mut canvas: &mut Canvas,
-    ) {
-        let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
-        if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) {
-            // get the tile hovered by the mouse
-            if let Some(selected_unit) = &self.selected_unit {
-                // if a unit is selected
-                if (self.get(&clicked_tile_idx).is_none()
-                    || clicked_tile_idx == selected_unit.position)
-                    && selected_unit.previsualisation.is_movement_some()
-                {
-                    let mut selected_unit2 = self.units[selected_unit.position.get_index()]
-                        .take()
-                        .unwrap();
-                    selected_unit2.remaining_moves -=
-                        selected_unit.reachable_tiles[clicked_tile_idx.get_index()].unwrap();
-                    self.set(&clicked_tile_idx, Some(selected_unit2));
-                    self.selected_unit = None;
-                } else if let Previsualisation::Action(action, targets, _consequences) =
-                    &selected_unit.previsualisation
-                {
-                    if *action && targets.contains(&clicked_tile_idx) {
-                        let attack = self[&selected_unit.position].attacks.1.clone();
-                        attack.apply(
-                            &selected_unit.position.clone(),
-                            &clicked_tile_idx,
-                            &mut map,
-                            self,
-                        );
-                    } else if targets.contains(&clicked_tile_idx) {
-                        let attack = self[&selected_unit.position].attacks.0.clone();
-                        attack.apply(
-                            &selected_unit.position.clone(),
-                            &clicked_tile_idx,
-                            &mut map,
-                            self,
-                        );
-                    }
-                    self.selected_unit.as_mut().unwrap().previsualisation =
-                        Previsualisation::Movement(None);
-                }
-            } else if self.get(&clicked_tile_idx).is_some() {
-                // if no unit is selected but a unit has been clicked
-                let canvas_height = canvas.get_height() as usize;
-                let mut t1 = TextBox::new(
-                    (10.0, 200.0),
-                    self.margin - 20,
-                    &arial,
-                    self[&clicked_tile_idx].attacks.0.get_description(),
-                );
-                let mut t2 = TextBox::new(
-                    (10.0, 300.0),
-                    self.margin - 20,
-                    &arial,
-                    self[&clicked_tile_idx].attacks.1.get_description(),
-                );
-                t1.init(&mut canvas);
-                t2.init(&mut canvas);
-                t2.set_y(canvas_height - t2.get_height());
-                t1.set_y(canvas_height - t2.get_height() - t1.get_height());
-                self.selected_unit = Some(SelectedUnit {
-                    position: clicked_tile_idx,
-                    previsualisation: Previsualisation::Movement(None),
-                    reachable_tiles: compute_travel_time(
-                        &self,
-                        &map,
-                        clicked_tile_idx,
-                        self[&clicked_tile_idx].get_remaining_moves(),
-                    ),
-                    action_textboxes: (t1, t2),
-                });
+    pub fn move_selected_unit(&mut self, to: &HexIndex) {
+        let selected_unit = self.selected_unit.as_mut().unwrap();
+        let mut unit = self.units[selected_unit.position.get_index()]
+            .take()
+            .unwrap();
+        unit.remaining_moves -= selected_unit.reachable_tiles[to.get_index()].unwrap();
+        self.set(&to, Some(unit));
+        self.selected_unit = None;
+    }
+
+    pub fn apply_action_of_selected_unit(&mut self, target: &HexIndex, mut map: &mut Map) {
+        if let Units {
+            units,
+            selected_unit:
+                Some(SelectedUnit {
+                    position,
+                    previsualisation: Previsualisation::Action(action, targets, _consequences),
+                    ..
+                }),
+            ..
+        } = self
+        {
+            if *action && targets.contains(&target) {
+                let attack = units[position.get_index()]
+                    .as_ref()
+                    .unwrap()
+                    .attacks
+                    .1
+                    .clone();
+                attack.apply(&position, &target, &mut map, units);
+            } else if targets.contains(&target) {
+                let attack = units[position.get_index()]
+                    .as_ref()
+                    .unwrap()
+                    .attacks
+                    .0
+                    .clone();
+                attack.apply(&position, &target, &mut map, units);
             }
-        } else if let Some(selected_unit) = &self.selected_unit {
-            if selected_unit.action_textboxes.0.is_hover_with_mouse_position((x, y)) {
+            self.selected_unit.as_mut().unwrap().previsualisation =
+                Previsualisation::Movement(None);
+        }
+    }
+
+    pub fn select_unit(
+        &mut self,
+        index: HexIndex,
+        mut canvas: &mut Canvas,
+        arial: &'a Font,
+        map: &Map,
+    ) {
+        let canvas_height = canvas.get_height() as usize;
+        let mut t1 = TextBox::new(
+            (10.0, 200.0),
+            self.margin - 20,
+            &arial,
+            self[&index].attacks.0.get_description(),
+        );
+        let mut t2 = TextBox::new(
+            (10.0, 300.0),
+            self.margin - 20,
+            &arial,
+            self[&index].attacks.1.get_description(),
+        );
+        t1.init(&mut canvas);
+        t2.init(&mut canvas);
+        t2.set_y(canvas_height - t2.get_height());
+        t1.set_y(canvas_height - t2.get_height() - t1.get_height());
+        self.selected_unit = Some(SelectedUnit {
+            position: index,
+            previsualisation: Previsualisation::Movement(None),
+            reachable_tiles: compute_travel_time(
+                &self,
+                &map,
+                index,
+                self[&index].get_remaining_moves(),
+            ),
+            action_textboxes: (t1, t2),
+        });
+    }
+
+    pub fn handle_action_selection(&mut self, mouse_position: (u32, u32), map: &Map) {
+        if let Some(selected_unit) = &self.selected_unit {
+            if selected_unit
+                .action_textboxes
+                .0
+                .is_hover_with_mouse_position(mouse_position)
+            {
                 let targets = self[&selected_unit.position]
                     .attacks
                     .0
                     .get_potential_targets(&map, &self, &selected_unit.position);
                 self.selected_unit.as_mut().unwrap().previsualisation =
                     Previsualisation::Action(false, targets, Vec::new());
-            } else if selected_unit.action_textboxes.1.is_hover_with_mouse_position((x, y)) {
+            } else if selected_unit
+                .action_textboxes
+                .1
+                .is_hover_with_mouse_position(mouse_position)
+            {
                 let targets = self[&selected_unit.position]
                     .attacks
                     .1
@@ -301,6 +313,34 @@ impl<'a> Units<'a> {
                 self.selected_unit.as_mut().unwrap().previsualisation =
                     Previsualisation::Action(true, targets, Vec::new());
             }
+        }
+    }
+
+    pub fn handle_mouse_click(
+        &mut self,
+        mut map: &mut Map,
+        x: u32,
+        y: u32,
+        arial: &'a Font,
+        canvas: &mut Canvas,
+    ) {
+        // get the tile hovered by the mouse
+        let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
+        if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) {
+            if let Some(selected_unit) = &self.selected_unit {
+                if (self.get(&clicked_tile_idx).is_none()
+                    || clicked_tile_idx == selected_unit.position)
+                    && selected_unit.previsualisation.is_movement_some()
+                {
+                    self.move_selected_unit(&clicked_tile_idx);
+                } else if let Previsualisation::Action(_, _, _) = &selected_unit.previsualisation {
+                    self.apply_action_of_selected_unit(&clicked_tile_idx, &mut map);
+                }
+            } else if self.get(&clicked_tile_idx).is_some() {
+                self.select_unit(clicked_tile_idx, canvas, arial, map);
+            }
+        } else if self.selected_unit.is_some() {
+            self.handle_action_selection((x, y), map);
         }
     }
 }

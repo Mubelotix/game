@@ -10,7 +10,13 @@ pub enum Attack {
 }
 
 impl Attack {
-    pub fn apply(&self, position: &HexIndex, target: &HexIndex, _map: &mut Map, units: &mut Units) {
+    pub fn apply(
+        &self,
+        position: &HexIndex,
+        target: &HexIndex,
+        _map: &mut Map,
+        units: &mut [Option<Unit>; 61],
+    ) {
         match self {
             Attack::VolleyOfArrows => {
                 let mut final_target = None;
@@ -23,7 +29,7 @@ impl Attack {
                             right_direction = true;
                         }
                         targets.push(index);
-                        if units.get(&index).is_none() {
+                        if units[index.get_index()].is_none() {
                             while let Some(index) =
                                 targets[targets.len() - 1].get_neighbour(&direction)
                             {
@@ -31,7 +37,7 @@ impl Attack {
                                     right_direction = true;
                                 }
                                 targets.push(index);
-                                if units.get(&index).is_some() {
+                                if units[index.get_index()].is_some() {
                                     break;
                                 }
                             }
@@ -43,14 +49,14 @@ impl Attack {
                 }
 
                 if let Some(target) = final_target {
-                    if let Some(unit) = units.get_mut(&target) {
+                    if let Some(unit) = &mut units[target.get_index()] {
                         unit.life.lose_life(1);
                     }
                 }
             }
             t => {
                 log!("unknown action: {:?}", t);
-                if let Some(unit) = units.get_mut(target) {
+                if let Some(unit) = &mut units[target.get_index()] {
                     unit.life.lose_life(1);
                 }
             }
