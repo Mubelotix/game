@@ -127,7 +127,7 @@ impl<'a> Units<'a> {
         &self.units[idx.get_index()]
     }
 
-    pub fn get_mut(&mut self, idx: &HexIndex) -> &mut Option<Unit> {
+    pub fn _get_mut(&mut self, idx: &HexIndex) -> &mut Option<Unit> {
         &mut self.units[idx.get_index()]
     }
 
@@ -222,32 +222,16 @@ impl<'a> Units<'a> {
             units,
             selected_unit:
                 Some(SelectedUnit {
-                    position,
-                    previsualisation: Previsualisation::Action(action, targets, _consequences),
+                    previsualisation: Previsualisation::Action(_action, targets, consequences),
                     ..
                 }),
             ..
         } = self
         {
-            if *action && targets.contains(&target) {
-                let attack = units[position.get_index()]
-                    .as_ref()
-                    .unwrap()
-                    .attacks
-                    .1
-                    .clone();
-                attack.apply(&position, &target, &mut map, units);
-            } else if targets.contains(&target) {
-                let attack = units[position.get_index()]
-                    .as_ref()
-                    .unwrap()
-                    .attacks
-                    .0
-                    .clone();
-                attack.apply(&position, &target, &mut map, units);
+            if targets.contains(&target) {
+                Attack::apply(consequences.split_off(0), &mut map, units);
             }
-            self.selected_unit.as_mut().unwrap().previsualisation =
-                Previsualisation::Movement(None);
+            self.selected_unit = None;
         }
     }
 

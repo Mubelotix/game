@@ -1,4 +1,4 @@
-use crate::{idx::*, map::*, *};
+use crate::{idx::*, map::*, life::*, *};
 
 pub enum Previsualisation {
     Movement(Option<Vec<HexIndex>>),
@@ -17,6 +17,7 @@ impl Previsualisation {
 pub enum PrevisualisationItem {
     PushArrow(Direction),
     LongDistanceShoot(HexIndex), // hexindex: target
+    LifeChange(Life),
 }
 
 const PUSH_ARROW_STYLE: LineStyle = LineStyle {
@@ -141,6 +142,9 @@ impl PrevisualisationItem {
                     .context
                     .set_line_dash(&JsValue::from(js_sys::Array::new()))
                     .unwrap();
+            }
+            PrevisualisationItem::LifeChange(life) => {
+                life.draw_on_canvas(canvas, data);
             }
         }
     }

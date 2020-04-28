@@ -37,6 +37,19 @@ impl Life {
         }
     }
 
+    pub fn is_dead(&self) -> bool {
+        self.current == 0
+    }
+
+    pub fn previsualise_loss(&self, damage: usize) -> Life {
+        let mut life = Life {
+            max: self.max,
+            current: self.current,
+        };
+        life.lose_life(damage);
+        life
+    }
+
     pub fn draw_on_canvas(&self, mut canvas: &mut Canvas, data: &DrawingData) {
         BORDER_STYLE.apply_on_canvas(&mut canvas);
 

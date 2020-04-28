@@ -11,54 +11,31 @@ pub enum Attack {
 
 impl Attack {
     pub fn apply(
-        &self,
-        position: &HexIndex,
-        target: &HexIndex,
+        consequences: Vec<(HexIndex, PrevisualisationItem)>,
         _map: &mut Map,
         units: &mut [Option<Unit>; 61],
     ) {
-        match self {
-            Attack::VolleyOfArrows => {
-                let mut final_target = None;
-
-                for direction in Direction::iter() {
-                    let mut targets = Vec::new();
-                    let mut right_direction = false;
-                    if let Some(index) = position.get_neighbour(&direction) {
-                        if &index == target {
-                            right_direction = true;
-                        }
-                        targets.push(index);
-                        if units[index.get_index()].is_none() {
-                            while let Some(index) =
-                                targets[targets.len() - 1].get_neighbour(&direction)
-                            {
-                                if &index == target {
-                                    right_direction = true;
-                                }
-                                targets.push(index);
-                                if units[index.get_index()].is_some() {
-                                    break;
-                                }
-                            }
-                            if right_direction {
-                                final_target = Some(targets[targets.len() - 1]);
+        for consequence in consequences {
+            match consequence {
+                (position, PrevisualisationItem::LifeChange(life)) => {
+                    if life.is_dead() {
+                        units[position.get_index()] = None;
+                    } else {
+                        units[position.get_index()].as_mut().unwrap().life = life;
+                    }
+                },
+                (_position, PrevisualisationItem::LongDistanceShoot(_target)) => {
+                    // TODO burn forests, destroy montains
+                },
+                (position, PrevisualisationItem::PushArrow(direction)) => {
+                    if let Some(new_position) = position.get_neighbour(&direction) {
+                        if units[new_position.get_index()].is_none() {
+                            if let Some(unit) = units[position.get_index()].take() {
+                                units[new_position.get_index()] = Some(unit);
                             }
                         }
                     }
-                }
-
-                if let Some(target) = final_target {
-                    if let Some(unit) = &mut units[target.get_index()] {
-                        unit.life.lose_life(1);
-                    }
-                }
-            }
-            t => {
-                log!("unknown action: {:?}", t);
-                if let Some(unit) = &mut units[target.get_index()] {
-                    unit.life.lose_life(1);
-                }
+                },
             }
         }
     }
@@ -188,32 +165,15 @@ impl Attack {
     ) -> Vec<(HexIndex, PrevisualisationItem)> {
         match self {
             Attack::StickKnock => {
-                if Some(*target) == position.get_neighbour(&Direction::TopLeft) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::TopLeft))];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::TopRight) {
-                    return vec![(
-                        *target,
-                        PrevisualisationItem::PushArrow(Direction::TopRight),
-                    )];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::Right) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Right))];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::BottomRight) {
-                    return vec![(
-                        *target,
-                        PrevisualisationItem::PushArrow(Direction::BottomRight),
-                    )];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::BottomLeft) {
-                    return vec![(
-                        *target,
-                        PrevisualisationItem::PushArrow(Direction::BottomLeft),
-                    )];
-                }
-                if Some(*target) == position.get_neighbour(&Direction::Left) {
-                    return vec![(*target, PrevisualisationItem::PushArrow(Direction::Left))];
+                for direction in Direction::iter() {
+                    if Some(*target) == position.get_neighbour(&direction) {
+                        let mut consequences = Vec::new();
+                        if let Some(life) = units[target.get_index()].as_ref().map(|u| &u.life) {
+                            consequences.push((*target, PrevisualisationItem::LifeChange(life.previsualise_loss(1))));
+                        }
+                        consequences.push((*target, PrevisualisationItem::PushArrow(direction)));
+                        return consequences;
+                    }
                 }
                 vec![]
             }
@@ -306,6 +266,9 @@ impl Attack {
                                 final_target = Some(targets[targets.len() - 1]);
                                 final_direction = Some(direction);
                             }
+                        } else if right_direction {
+                            final_target = Some(targets[targets.len() - 1]);
+                            final_direction = Some(direction);
                         }
                     }
                 }
