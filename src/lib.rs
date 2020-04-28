@@ -15,7 +15,7 @@ use wasm_game_lib::system::sleep;
 use std::time::Duration;
 use std::convert::TryInto;
 use web_sys;
-mod loader; mod map; mod random; mod units; mod pathfinder; mod button; mod idx; mod progress_bar; mod textbox; mod life;
+mod loader; mod map; mod random; mod units; mod pathfinder; mod button; mod idx; mod progress_bar; mod textbox; mod life; mod actions; mod previsualisation;
 use loader::load_images;
 use map::*;
 use units::*;

@@ -1,4 +1,4 @@
-use crate::{idx::HexIndex, map::*, pathfinder::*, textbox::*, life::*, *};
+use crate::{idx::HexIndex, map::*, pathfinder::*, textbox::*, life::*, actions::*, previsualisation::*, *};
 use arr_macro::arr;
 use wasm_game_lib::graphics::{canvas::*, image::*, drawable::*, color::*, font::*};
 use std::convert::TryInto;
@@ -69,170 +69,10 @@ impl Unit {
     }
 }
 
-#[derive(PartialEq, Clone)]
-pub enum Attack {
-    StickKnock,
-    VolleyOfArrows,
-    OffensiveSwordFight,
-    DefensiveSwordFight,
-    Heal,
-}
-
-impl Attack {
-    pub fn apply(&self, position: HexIndex, map: &mut Map, units: &mut Units) {
-        if let Some(unit) = units.get_mut(&position) {
-            unit.life.lose_life(1);
-        }
-    }
-
-    pub fn get_description(&self) -> &'static str {
-        match self {
-            Attack::StickKnock => "Hit an adjacent unit (1 damage) and push it away.",
-            Attack::VolleyOfArrows => "Shoot arrows in one direction. The first ennemy on that direction will be damaged (1 damage) and pushed away.",
-            Attack::OffensiveSwordFight => "Attack adjacent unit using sword (2 damage) and pull it (1 damage for both units).",
-            Attack::DefensiveSwordFight => "Attack adjacent unit using sword (2 damage) and push it away.",
-            Attack::Heal => "Restore 1 LP. The healed unit will be restored at least to the third of the max LPs.",
-        }
-    }
-
-    pub fn get_name(&self) -> &'static str {
-        match self {
-            Attack::StickKnock => "Stick Knock",
-            Attack::VolleyOfArrows => "Volley of Arrows",
-            Attack::OffensiveSwordFight => "Offensive Sword Fight",
-            Attack::DefensiveSwordFight => "Defensive Sword Fight",
-            Attack::Heal => "Heal",
-        }
-    }
-
-    pub fn get_icon_idx(&self) -> usize {
-        unimplemented!();
-    }
-
-    pub fn can_be_used_by_unit(&self, unit: &UnitType) -> bool {
-        match self {
-            Attack::StickKnock => true,
-            Attack::Heal => true,
-            Attack::VolleyOfArrows => match unit {
-                UnitType::Archer => true,
-                _ => false,
-            },
-            Attack::OffensiveSwordFight | Attack::DefensiveSwordFight => match unit {
-                UnitType::Knight => true,
-                _ => false,
-            }
-        }
-    }
-
-    pub fn get_potential_targets(&self, _map: &Map, position: &HexIndex) -> Vec<HexIndex> {
-        match self {
-            Attack::Heal => {
-                let mut targets = Vec::new();
-                if let Some(index) = position.get_top_left_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_top_right_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_right_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_bottom_right_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_bottom_left_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_left_neighbour() {
-                    targets.push(index);
-                }
-                targets.push(*position);
-                targets
-            }
-            Attack::DefensiveSwordFight | Attack::OffensiveSwordFight | Attack::StickKnock => {
-                let mut targets = Vec::new();
-                if let Some(index) = position.get_top_left_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_top_right_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_right_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_bottom_right_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_bottom_left_neighbour() {
-                    targets.push(index);
-                }
-                if let Some(index) = position.get_left_neighbour() {
-                    targets.push(index);
-                }
-                targets
-            }
-            Attack::VolleyOfArrows => {
-                let mut targets = Vec::new();
-                if let Some(index) = position.get_top_left_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_top_left_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                if let Some(index) = position.get_top_right_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_top_right_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                if let Some(index) = position.get_right_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_right_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                if let Some(index) = position.get_bottom_right_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_bottom_right_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                if let Some(index) = position.get_bottom_left_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_bottom_left_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                if let Some(index) = position.get_left_neighbour() {
-                    targets.push(index);
-                    while let Some(index) = targets[targets.len() - 1].get_left_neighbour() {
-                        targets.push(index);
-                    }
-                }
-                targets
-            }
-        }        
-    }
-}
-
-enum Previsualisation {
-    Movement(Option<Vec<HexIndex>>),
-}
-
-impl Previsualisation {
-    pub fn is_movement_some(&self) -> bool {
-        match self {
-            Previsualisation::Movement(r) => r.is_some(),
-            _ => false,
-        }
-    }
-}
-
 struct SelectedUnit<'a> {
     pub position: HexIndex,
     pub reachable_tiles: [Option<usize>; 61],
     pub action_textboxes: (TextBox<'a>, TextBox<'a>),
-    pub selected_action: Option<(bool, Vec<HexIndex>)>,
     pub previsualisation: Previsualisation,
 }
 
@@ -291,12 +131,35 @@ impl<'a> Units<'a> {
     }
 
     pub fn handle_mouse_move(&mut self, map: &Map, x: u32, y: u32) {
-        if let Some(_selected_unit) = &self.selected_unit {
-            let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
-            if let Some(index) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
-                self.selected_unit.as_mut().unwrap().previsualisation = Previsualisation::Movement(find_route(&self.selected_unit.as_ref().unwrap().reachable_tiles, self.selected_unit.as_ref().unwrap().position, index));
-            } else {
-                self.selected_unit.as_mut().unwrap().previsualisation = Previsualisation::Movement(None);
+        let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
+        if let Some(index) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
+            match self {
+                Units {
+                    selected_unit: Some(SelectedUnit{
+                        position,
+                        reachable_tiles,
+                        previsualisation: Previsualisation::Movement(previsualisation),
+                        ..
+                    }),
+                    ..
+                } => *previsualisation = find_route(&reachable_tiles, *position, index),
+                Units {
+                    selected_unit: Some(SelectedUnit{
+                        position,
+                        reachable_tiles,
+                        action_textboxes,
+                        previsualisation: Previsualisation::Action(actions, target, consequences)
+                    }),
+                    units,
+                    ..
+                } => {
+                    *consequences = if *actions {
+                        units[position.get_index()].as_ref().unwrap().attacks.1.get_consequences(&map, units, position, &index)
+                    } else {
+                        units[position.get_index()].as_ref().unwrap().attacks.0.get_consequences(&map, units, position, &index)
+                    };
+                }
+                _ => (),
             }
         }
     }
@@ -305,12 +168,12 @@ impl<'a> Units<'a> {
         let coords = map.screen_coords_to_internal_canvas_coords(x as usize, y as usize);
         if let Some(clicked_tile_idx) = HexIndex::from_canvas_coords(coords) { // get the tile hovered by the mouse
             if let Some(selected_unit) = &self.selected_unit { // if a unit is selected
-                if selected_unit.selected_action.is_none() && (self.get(&clicked_tile_idx).is_none() || clicked_tile_idx == selected_unit.position) && selected_unit.previsualisation.is_movement_some() {
+                if (self.get(&clicked_tile_idx).is_none() || clicked_tile_idx == selected_unit.position) && selected_unit.previsualisation.is_movement_some() {
                     let mut selected_unit2 = self.units[selected_unit.position.get_index()].take().unwrap();
                     selected_unit2.remaining_moves -= selected_unit.reachable_tiles[clicked_tile_idx.get_index()].unwrap();
                     self.set(&clicked_tile_idx, Some(selected_unit2));
                     self.selected_unit = None;
-                } else if let Some((action, _targets)) = &selected_unit.selected_action {
+                } else if let Previsualisation::Action(action, targets, consequences) = &selected_unit.previsualisation {
                     if *action {
                         let attack = self[&selected_unit.position].attacks.0.clone();
                         attack.apply(clicked_tile_idx, &mut map, self);
@@ -318,7 +181,7 @@ impl<'a> Units<'a> {
                         let attack = self[&selected_unit.position].attacks.1.clone();
                         attack.apply(clicked_tile_idx, &mut map, self);
                     }
-                    self.selected_unit.as_mut().unwrap().selected_action = None;
+                    self.selected_unit.as_mut().unwrap().previsualisation = Previsualisation::Movement(None);
                 }
             } else if self.get(&clicked_tile_idx).is_some() { // if no unit is selected but a unit has been clicked
                 let canvas_height = canvas.get_height() as usize;
@@ -333,17 +196,16 @@ impl<'a> Units<'a> {
                     previsualisation: Previsualisation::Movement(None),
                     reachable_tiles: compute_travel_time(&self, &map, clicked_tile_idx, self[&clicked_tile_idx].get_remaining_moves()),
                     action_textboxes: (t1, t2),
-                    selected_action: None,
                 });
             }
         } else if let Some(selected_unit) = &self.selected_unit {
             // TODO correct delay
             if selected_unit.action_textboxes.0.is_pressed() {
-                let targets = self[&selected_unit.position].attacks.0.get_potential_targets(&map, &selected_unit.position);
-                self.selected_unit.as_mut().unwrap().selected_action = Some((false, targets));
+                let targets = self[&selected_unit.position].attacks.0.get_potential_targets(&map, &self, &selected_unit.position);
+                self.selected_unit.as_mut().unwrap().previsualisation = Previsualisation::Action(false, targets, Vec::new());
             } else if selected_unit.action_textboxes.1.is_pressed() {
-                let targets = self[&selected_unit.position].attacks.1.get_potential_targets(&map, &selected_unit.position);
-                self.selected_unit.as_mut().unwrap().selected_action = Some((true, targets));
+                let targets = self[&selected_unit.position].attacks.1.get_potential_targets(&map, &self, &selected_unit.position);
+                self.selected_unit.as_mut().unwrap().previsualisation = Previsualisation::Action(true, targets, Vec::new());
             }
         }
     } 
@@ -390,12 +252,16 @@ impl<'a> Drawable for Units<'a> {
             let canvas_width = canvas.get_width();
             let canvas_height = canvas.get_height();
 
-            if let Some((_action, targets)) = &selected_unit.selected_action {
+            if let Previsualisation::Action(_action, targets, consequences) = &selected_unit.previsualisation {
                 for target in targets {
                     let (x, y) = target.get_canvas_coords();
                     let (x, y) = Map::internal_coords_to_screen_coords((canvas_width, canvas_height), self.margin, x as isize, y as isize);
     
                     canvas.get_2d_canvas_rendering_context().draw_image_with_html_image_element_and_dw_and_dh(self.overground[1].get_html_element(), x as f64, y as f64, 256.0 * factor, 384.0 * factor).unwrap();
+                }
+
+                for (position, consequence) in consequences {
+                    consequence.draw_on_canvas(&mut canvas, &DrawingData{position, ..drawing_data})
                 }
             } else {
                 if let Previsualisation::Movement(Some(route)) = &selected_unit.previsualisation {

@@ -1,4 +1,4 @@
-use crate::units::Attack;
+use crate::actions::Attack;
 use wasm_game_lib::graphics::text::*;
 use wasm_game_lib::graphics::drawable::*;
 use wasm_game_lib::graphics::canvas::*;

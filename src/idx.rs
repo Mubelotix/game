@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use crate::map::Direction;
 
 fn idx_to_y(idx: usize) -> usize {
     if idx < 5 {
@@ -212,6 +213,17 @@ impl HexIndex {
             }
         } else {
             None
+        }
+    }
+
+    pub fn get_neighbour(&self, direction: &Direction) -> Option<HexIndex> {
+        match direction {
+            Direction::TopLeft => self.get_top_left_neighbour(),
+            Direction::TopRight => self.get_top_right_neighbour(),
+            Direction::Right => self.get_right_neighbour(),
+            Direction::BottomRight => self.get_bottom_right_neighbour(),
+            Direction::BottomLeft => self.get_bottom_left_neighbour(),
+            Direction::Left => self.get_left_neighbour(),
         }
     }
 

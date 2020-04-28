@@ -202,3 +202,12 @@ impl<'a> std::ops::IndexMut<&HexIndex> for Map<'a> {
         &mut self.tiles[index.get_index()]
     }
 }
+
+pub enum Direction {
+    TopLeft,
+    TopRight,
+    Right,
+    BottomRight,
+    BottomLeft,
+    Left
+}
