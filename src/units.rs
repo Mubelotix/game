@@ -63,6 +63,7 @@ pub struct Unit {
     pub attacks: (Attack, Attack),
     pub life: Life,
     pub action_remaining: bool,
+    pub barbarian_next_action: Option<(Attack, Vec<Direction>)>,
 }
 
 impl Unit {
@@ -80,6 +81,7 @@ impl Unit {
                 UnitType::ArmoredBarbarian => (Attack::StickKnock, Attack::Heal),
                 UnitType::BarbarianLordOfDeath => (Attack::StickKnock, Attack::Heal),
             },
+            barbarian_next_action: None,
             unit_type,
         }
     }
@@ -132,6 +134,7 @@ pub struct Units<'a> {
     line_style: LineStyle,
     next_turn_button: Button<'a>,
     selected_unit: Option<SelectedUnit<'a>>,
+    barbarian_actions: Vec<(HexIndex, PrevisualisationItem)>,
 }
 
 impl<'a> Units<'a> {
@@ -154,6 +157,7 @@ impl<'a> Units<'a> {
                 size: 14.0,
             },
             selected_unit: None,
+            barbarian_actions: Vec::new(),
         }
     }
 
@@ -190,6 +194,54 @@ impl<'a> Units<'a> {
                     - selected_unit.action_textboxes.1.get_height(),
             );
         }
+    }
+
+    pub fn apply_barbarian_actions(&mut self, map: &mut Map) {
+        Attack::apply(self.barbarian_actions.split_off(0), map, &mut self.units)
+    }
+
+    pub fn make_ai_play(&mut self) {
+        for unit in self
+            .units
+            .iter_mut()
+            .filter_map(|u| u.as_mut())
+            .filter(|u| u.unit_type.is_barbarian())
+        {
+            unit.barbarian_next_action = Some((Attack::StickKnock, vec![!Direction::BottomLeft]));
+        }
+    }
+
+    pub fn update_barbarian_actions(
+        &mut self,
+        map: &Map,
+    ) {
+        let mut consequences = Vec::new();
+        for (position, (action, directions)) in self
+            .units
+            .iter()
+            .enumerate()
+            .filter(|u| u.1.is_some())
+            .map(|u| (u.0, u.1.as_ref().unwrap()))
+            .filter(|u| u.1.barbarian_next_action.is_some())
+            .map(|u| (u.0, u.1.barbarian_next_action.as_ref().unwrap()))
+        {
+            let position: HexIndex = position.try_into().unwrap();
+            let mut target = Some(position);
+            for direction in directions {
+                if let Some(target2) = target {
+                    target = target2.get_neighbour(&direction);
+                }
+            }
+            if let Some(target) = target {
+                consequences.append(&mut action.get_consequences(
+                    map,
+                    &self.units,
+                    &position,
+                    &target,
+                ));
+            }
+        }
+        self.barbarian_actions = consequences;
     }
 
     pub fn handle_mouse_move(&mut self, map: &Map, x: u32, y: u32) {
@@ -242,7 +294,10 @@ impl<'a> Units<'a> {
     }
 
     pub fn move_selected_unit(&mut self, to: &HexIndex) {
-        if !self[&self.selected_unit.as_ref().unwrap().position].unit_type.is_barbarian() {
+        if !self[&self.selected_unit.as_ref().unwrap().position]
+            .unit_type
+            .is_barbarian()
+        {
             let selected_unit = self.selected_unit.as_mut().unwrap();
             let mut unit = self.units[selected_unit.position.get_index()]
                 .take()
@@ -265,7 +320,13 @@ impl<'a> Units<'a> {
             ..
         } = self
         {
-            if targets.contains(&target) && !units[position.get_index()].as_ref().unwrap().unit_type.is_barbarian() {
+            if targets.contains(&target)
+                && !units[position.get_index()]
+                    .as_ref()
+                    .unwrap()
+                    .unit_type
+                    .is_barbarian()
+            {
                 Attack::apply(consequences.split_off(0), &mut map, units);
                 units[position.get_index()]
                     .as_mut()
@@ -349,7 +410,7 @@ impl<'a> Units<'a> {
         }
     }
 
-    pub fn next_turn(&mut self, mouse_position: (u32, u32)) -> bool {
+    pub fn next_turn(&mut self, mouse_position: (u32, u32), map: &mut Map) -> bool {
         if self
             .next_turn_button
             .is_hover_with_mouse_position(mouse_position)
@@ -358,6 +419,11 @@ impl<'a> Units<'a> {
                 unit.remaining_moves = unit.unit_type.moves_per_turn();
                 unit.action_remaining = true;
             }
+
+            self.apply_barbarian_actions(map);
+            self.make_ai_play();
+            self.update_barbarian_actions(&map);
+            
             true
         } else {
             false
@@ -381,14 +447,16 @@ impl<'a> Units<'a> {
                     && selected_unit.previsualisation.is_movement_some()
                 {
                     self.move_selected_unit(&clicked_tile_idx);
+                    self.update_barbarian_actions(&map);
                 } else if let Previsualisation::Action(_, _, _) = &selected_unit.previsualisation {
                     self.apply_action_of_selected_unit(&clicked_tile_idx, &mut map);
+                    self.update_barbarian_actions(&map);
                 }
             } else if self.get(&clicked_tile_idx).is_some() {
                 self.select_unit(clicked_tile_idx, canvas, arial, map);
             }
         } else if !self.action_selection((x, y), map) {
-            self.next_turn((x, y));
+            self.next_turn((x, y), &mut map);
         }
     }
 }
@@ -435,6 +503,16 @@ impl<'a> Drawable for Units<'a> {
                 },
                 self.textures,
             );
+        }
+
+        for (position, consequence) in &self.barbarian_actions {
+            consequence.draw_on_canvas(
+                &mut canvas,
+                &DrawingData {
+                    position: &position,
+                    ..drawing_data
+                },
+            )
         }
 
         if let Some(selected_unit) = &self.selected_unit {

@@ -234,7 +234,7 @@ impl<'a> std::ops::IndexMut<&HexIndex> for Map<'a> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Direction {
     TopLeft,
     TopRight,
