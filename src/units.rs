@@ -242,12 +242,14 @@ impl<'a> Units<'a> {
     }
 
     pub fn move_selected_unit(&mut self, to: &HexIndex) {
-        let selected_unit = self.selected_unit.as_mut().unwrap();
-        let mut unit = self.units[selected_unit.position.get_index()]
-            .take()
-            .unwrap();
-        unit.remaining_moves -= selected_unit.reachable_tiles[to.get_index()].unwrap();
-        self.set(&to, Some(unit));
+        if !self[&self.selected_unit.as_ref().unwrap().position].unit_type.is_barbarian() {
+            let selected_unit = self.selected_unit.as_mut().unwrap();
+            let mut unit = self.units[selected_unit.position.get_index()]
+                .take()
+                .unwrap();
+            unit.remaining_moves -= selected_unit.reachable_tiles[to.get_index()].unwrap();
+            self.set(&to, Some(unit));
+        }
         self.selected_unit = None;
     }
 
@@ -263,14 +265,14 @@ impl<'a> Units<'a> {
             ..
         } = self
         {
-            if targets.contains(&target) {
+            if targets.contains(&target) && !units[position.get_index()].as_ref().unwrap().unit_type.is_barbarian() {
                 Attack::apply(consequences.split_off(0), &mut map, units);
                 units[position.get_index()]
                     .as_mut()
                     .unwrap()
                     .action_remaining = false;
-                self.selected_unit = None;
             }
+            self.selected_unit = None;
         }
     }
 
