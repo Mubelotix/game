@@ -1,4 +1,5 @@
-use crate::{idx::*, map::*, previsualisation::*, units::*, *};
+use crate::{idx::*, life::*, map::*, previsualisation::*, units::*, *};
+use arr_macro::arr;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Attack {
@@ -17,7 +18,8 @@ impl Attack {
     ) {
         for consequence in consequences {
             match consequence {
-                (position, PrevisualisationItem::LifeChange(life)) => {
+                (position, PrevisualisationItem::LifeChange(mut life)) => {
+                    life.lose_life();
                     if life.is_dead() {
                         units[position.get_index()] = None;
                     } else {
@@ -156,6 +158,54 @@ impl Attack {
                 targets
             }
         }
+    }
+
+    pub fn compile_consequences(
+        mut first: Vec<(HexIndex, PrevisualisationItem)>,
+        mut second: Vec<(HexIndex, PrevisualisationItem)>,
+    ) -> Vec<(HexIndex, PrevisualisationItem)> {
+        let mut life_changes: [Option<Life>; 61] = arr!(None; 61);
+        let mut third = Vec::new();
+
+        while !first.is_empty() {
+            match first.remove(0) {
+                (pos, PrevisualisationItem::LifeChange(life)) => {
+                    match &mut life_changes[pos.get_index()] {
+                        Some(other_life) => other_life.loss += life.loss,
+                        none => *none = Some(life),
+                    }
+                }
+                item => third.push(item),
+            }
+        }
+
+        while !second.is_empty() {
+            match second.remove(0) {
+                (pos, PrevisualisationItem::LifeChange(life)) => {
+                    match &mut life_changes[pos.get_index()] {
+                        Some(other_life) => other_life.loss += life.loss,
+                        none => *none = Some(life),
+                    }
+                }
+                item => third.push(item),
+            }
+        }
+
+        for (pos, life) in life_changes
+            .iter_mut()
+            .enumerate()
+            .filter(|l| l.1.is_some())
+        {
+            third.insert(
+                0,
+                (
+                    pos.try_into().unwrap(),
+                    PrevisualisationItem::LifeChange(life.take().unwrap()),
+                ),
+            );
+        }
+
+        third
     }
 
     pub fn get_consequences(
@@ -396,5 +446,56 @@ impl Attack {
             }
         }
         Vec::new()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn compiling_sequences() {
+        let compiled = Attack::compile_consequences(
+            vec![
+                (
+                    32.try_into().unwrap(),
+                    PrevisualisationItem::LifeChange(
+                        Life::new(&UnitType::Archer).previsualise_loss(2),
+                    ),
+                ),
+                (
+                    35.try_into().unwrap(),
+                    PrevisualisationItem::LifeChange(
+                        Life::new(&UnitType::Archer).previsualise_loss(2),
+                    ),
+                ),
+                (
+                    32.try_into().unwrap(),
+                    PrevisualisationItem::LifeChange(
+                        Life::new(&UnitType::Archer).previsualise_loss(1),
+                    ),
+                ),
+                (
+                    32.try_into().unwrap(),
+                    PrevisualisationItem::PushArrow(Direction::BottomLeft, false),
+                ),
+            ],
+            vec![
+                (
+                    32.try_into().unwrap(),
+                    PrevisualisationItem::LifeChange(
+                        Life::new(&UnitType::Archer).previsualise_loss(1),
+                    ),
+                ),
+                (
+                    33.try_into().unwrap(),
+                    PrevisualisationItem::LifeChange(
+                        Life::new(&UnitType::Archer).previsualise_loss(1),
+                    ),
+                ),
+            ],
+        );
+
+        assert_eq!(compiled.len(), 4);
     }
 }

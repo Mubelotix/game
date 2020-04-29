@@ -17,26 +17,56 @@ const BORDER_STYLE: LineStyle = LineStyle {
 pub struct Life {
     max: usize,
     current: usize,
+    pub loss: isize, // used for previsualisation
 }
 
 impl Life {
     pub fn new(unit_type: &UnitType) -> Life {
         match unit_type {
-            UnitType::Archer => Life { max: 2, current: 2 },
-            UnitType::Knight => Life { max: 4, current: 4 },
-            UnitType::Scout => Life { max: 3, current: 3 },
-            UnitType::Barbarian => Life { max: 3, current: 3 },
-            UnitType::BarbarianVariant => Life { max: 2, current: 2 },
-            UnitType::ArmoredBarbarian => Life { max: 4, current: 4 },
-            UnitType::BarbarianLordOfDeath => Life { max: 8, current: 8 },
+            UnitType::Archer => Life {
+                max: 2,
+                current: 2,
+                loss: 0,
+            },
+            UnitType::Knight => Life {
+                max: 4,
+                current: 4,
+                loss: 0,
+            },
+            UnitType::Scout => Life {
+                max: 3,
+                current: 3,
+                loss: 0,
+            },
+            UnitType::Barbarian => Life {
+                max: 3,
+                current: 3,
+                loss: 0,
+            },
+            UnitType::BarbarianVariant => Life {
+                max: 2,
+                current: 2,
+                loss: 0,
+            },
+            UnitType::ArmoredBarbarian => Life {
+                max: 4,
+                current: 4,
+                loss: 0,
+            },
+            UnitType::BarbarianLordOfDeath => Life {
+                max: 8,
+                current: 8,
+                loss: 0,
+            },
         }
     }
 
-    pub fn lose_life(&mut self, damage: isize) {
-        if damage >= self.current as isize {
+    pub fn lose_life(&mut self) {
+        if self.loss >= self.current as isize {
             self.current = 0;
         } else {
-            self.current = (self.current as isize - damage) as usize;
+            self.current = (self.current as isize - self.loss) as usize;
+            self.loss = 0;
             if self.current > self.max {
                 self.current = self.max;
             }
@@ -48,12 +78,11 @@ impl Life {
     }
 
     pub fn previsualise_loss(&self, damage: isize) -> Life {
-        let mut life = Life {
+        Life {
             max: self.max,
             current: self.current,
-        };
-        life.lose_life(damage);
-        life
+            loss: damage,
+        }
     }
 
     pub fn draw_on_canvas(&self, mut canvas: &mut Canvas, data: &DrawingData) {
@@ -97,6 +126,9 @@ impl Life {
 
         context.set_fill_style(&JsValue::from_str("rgb(0, 255, 100)"));
         for i in 0..self.current {
+            if i as isize >= self.current as isize - self.loss {
+                context.set_fill_style(&JsValue::from_str("rgb(255, 0, 0)"));
+            }
             context.fill_rect(
                 coords.0 as f64 + (4.0 + i as f64 * point_width) * data.factor,
                 coords.1 as f64 + 4.0 * data.factor,

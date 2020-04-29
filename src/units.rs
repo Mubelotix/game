@@ -211,10 +211,7 @@ impl<'a> Units<'a> {
         }
     }
 
-    pub fn update_barbarian_actions(
-        &mut self,
-        map: &Map,
-    ) {
+    pub fn update_barbarian_actions(&mut self, map: &Map) {
         let mut consequences = Vec::new();
         for (position, (action, directions)) in self
             .units
@@ -423,7 +420,7 @@ impl<'a> Units<'a> {
             self.apply_barbarian_actions(map);
             self.make_ai_play();
             self.update_barbarian_actions(&map);
-            
+
             true
         } else {
             false
@@ -493,6 +490,7 @@ impl<'a> Drawable for Units<'a> {
             position: &0.try_into().unwrap(),
         };
 
+        // draw units
         for (idx, unit) in self.units.iter().enumerate().filter(|(_i, u)| u.is_some()) {
             let unit = unit.as_ref().unwrap();
             unit.draw_on_canvas(
@@ -505,6 +503,7 @@ impl<'a> Drawable for Units<'a> {
             );
         }
 
+        // draw barbabarian actions
         for (position, consequence) in &self.barbarian_actions {
             consequence.draw_on_canvas(
                 &mut canvas,
@@ -515,6 +514,7 @@ impl<'a> Drawable for Units<'a> {
             )
         }
 
+        // draw selected unit info
         if let Some(selected_unit) = &self.selected_unit {
             let canvas_width = canvas.get_width();
             let canvas_height = canvas.get_height();
@@ -543,6 +543,7 @@ impl<'a> Drawable for Units<'a> {
                         .unwrap();
                 }
 
+                // draw consequences of the selected action
                 for (position, consequence) in consequences {
                     consequence.draw_on_canvas(
                         &mut canvas,
