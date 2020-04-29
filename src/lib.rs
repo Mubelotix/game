@@ -52,25 +52,28 @@ pub async fn start() -> Result<(), JsValue> {
         Window::init_with_events(KEYBOARD_EVENT + RESIZE_EVENT + MOUSE_EVENT);
     let t = load_images(
         vec![
-            "textures/plains/grassy_plain1",
+            "textures/plains/grassy_plain1", // 0
             "textures/plains/grassy_plain2",
             "textures/plains/grassy_plain3",
             "textures/plains/grassy_plain4",
             "textures/forest/forest1",
-            "textures/forest/forest2",
+            "textures/forest/forest2",      // 5
             "textures/forest/forest3",
             "textures/forest/forest4",
             "textures/plains/plain1",
             "textures/plains/plain2",
-            "textures/plains/plain3",
+            "textures/plains/plain3",       // 10
             "textures/plains/plain4",
             "textures/underground/dirt",
-            "units/archer.png",
+            "textures/shadow.png",
+            "textures/red.png",
+            "units/archer.png",             // 15
             "units/knight.png",
             "units/scout.png",
             "units/barbarian.png",
-            "textures/shadow.png",
-            "textures/red.png",
+            "units/barbarian2.png",
+            "units/barbarian3.png",         // 20
+            "units/barbarian4.png",
         ],
         &mut canvas,
     )
@@ -88,12 +91,15 @@ pub async fn start() -> Result<(), JsValue> {
         margin,
     );
     let arial = Font::arial();
-    let mut units = Units::new([&t[13], &t[14], &t[15], &t[16]], [&t[17], &t[18]], margin, &arial);
+    let mut units = Units::new([&t[15], &t[16], &t[17], &t[18], &t[19], &t[20], &t[21]], [&t[13], &t[14]], margin, &arial);
     
     units.set(&3.try_into().unwrap(), Some(Unit::new(UnitType::Archer)));
     units.set(&4.try_into().unwrap(), Some(Unit::new(UnitType::Scout)));
     units.set(&5.try_into().unwrap(), Some(Unit::new(UnitType::Knight)));
     units.set(&6.try_into().unwrap(), Some(Unit::new(UnitType::Barbarian)));
+    units.set(&35.try_into().unwrap(), Some(Unit::new(UnitType::BarbarianVariant)));
+    units.set(&51.try_into().unwrap(), Some(Unit::new(UnitType::ArmoredBarbarian)));
+    units.set(&42.try_into().unwrap(), Some(Unit::new(UnitType::BarbarianLordOfDeath)));
 
     loop {
         for event in window.poll_events() {

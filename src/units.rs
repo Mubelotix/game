@@ -6,12 +6,17 @@ use std::convert::TryInto;
 use wasm_bindgen::JsValue;
 use wasm_game_lib::graphics::{canvas::*, color::*, drawable::*, font::*, image::*};
 
+const UNIT_NUMBER: usize = 7;
+
 #[derive(PartialEq)]
 pub enum UnitType {
     Archer,
     Knight,
     Scout,
     Barbarian,
+    BarbarianVariant,
+    ArmoredBarbarian,
+    BarbarianLordOfDeath,
 }
 
 impl UnitType {
@@ -21,6 +26,9 @@ impl UnitType {
             UnitType::Knight => 1,
             UnitType::Scout => 2,
             UnitType::Barbarian => 3,
+            UnitType::BarbarianVariant => 4,
+            UnitType::ArmoredBarbarian => 5,
+            UnitType::BarbarianLordOfDeath => 6,
         }
     }
 
@@ -30,6 +38,9 @@ impl UnitType {
             UnitType::Knight => 3,
             UnitType::Scout => 5,
             UnitType::Barbarian => 3,
+            UnitType::BarbarianVariant => 4,
+            UnitType::ArmoredBarbarian => 2,
+            UnitType::BarbarianLordOfDeath => 2,
         }
     }
 }
@@ -54,6 +65,9 @@ impl Unit {
                 UnitType::Scout => (Attack::StickKnock, Attack::Heal),
                 UnitType::Knight => (Attack::OffensiveSwordFight, Attack::DefensiveSwordFight),
                 UnitType::Barbarian => (Attack::StickKnock, Attack::Heal),
+                UnitType::BarbarianVariant => (Attack::StickKnock, Attack::Heal),
+                UnitType::ArmoredBarbarian => (Attack::StickKnock, Attack::Heal),
+                UnitType::BarbarianLordOfDeath => (Attack::StickKnock, Attack::Heal),
             },
             unit_type,
         }
@@ -67,7 +81,7 @@ impl Unit {
         &self,
         mut canvas: &mut Canvas,
         data: &DrawingData,
-        textures: [&Image; 4],
+        textures: [&Image; UNIT_NUMBER],
     ) {
         let coords = data.position.get_canvas_coords();
         let coords = Map::internal_coords_to_screen_coords(
@@ -101,7 +115,7 @@ struct SelectedUnit<'a> {
 
 pub struct Units<'a> {
     units: [Option<Unit>; 61],
-    textures: [&'a Image; 4],
+    textures: [&'a Image; UNIT_NUMBER],
     overground: [&'a Image; 2],
     margin: usize,
     line_style: LineStyle,
@@ -110,7 +124,7 @@ pub struct Units<'a> {
 }
 
 impl<'a> Units<'a> {
-    pub fn new(textures: [&'a Image; 4], overground: [&'a Image; 2], margin: usize, arial: &'a Font) -> Units<'a> {
+    pub fn new(textures: [&'a Image; UNIT_NUMBER], overground: [&'a Image; 2], margin: usize, arial: &'a Font) -> Units<'a> {
         Units {
             units: arr!(None;61),
             textures,
