@@ -353,7 +353,8 @@ impl Attack {
                     .as_ref()
                     .map(|u| &u.life)
                 {
-                    if let Some((other_pos, Some(other_life))) = final_target.unwrap()
+                    if let Some((other_pos, Some(other_life))) = final_target
+                        .unwrap()
                         .get_neighbour(&final_direction.clone().unwrap())
                         .map(|new_pos| {
                             (

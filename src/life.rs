@@ -26,9 +26,9 @@ impl Life {
             UnitType::Knight => Life { max: 4, current: 4 },
             UnitType::Scout => Life { max: 3, current: 3 },
             UnitType::Barbarian => Life { max: 3, current: 3 },
-            UnitType::BarbarianVariant => Life {max: 2, current: 2},
-            UnitType::ArmoredBarbarian => Life {max: 4, current: 4},
-            UnitType::BarbarianLordOfDeath => Life {max: 8, current: 8},
+            UnitType::BarbarianVariant => Life { max: 2, current: 2 },
+            UnitType::ArmoredBarbarian => Life { max: 4, current: 4 },
+            UnitType::BarbarianLordOfDeath => Life { max: 8, current: 8 },
         }
     }
 

@@ -1,5 +1,6 @@
 use crate::{
-    actions::*, idx::HexIndex, life::*, map::*, pathfinder::*, previsualisation::*, textbox::*, button::*, *,
+    actions::*, button::*, idx::HexIndex, life::*, map::*, pathfinder::*, previsualisation::*,
+    textbox::*, *,
 };
 use arr_macro::arr;
 use std::convert::TryInto;
@@ -41,6 +42,16 @@ impl UnitType {
             UnitType::BarbarianVariant => 4,
             UnitType::ArmoredBarbarian => 2,
             UnitType::BarbarianLordOfDeath => 2,
+        }
+    }
+
+    pub fn is_barbarian(&self) -> bool {
+        match self {
+            UnitType::Archer | UnitType::Knight | UnitType::Scout => false,
+            UnitType::Barbarian
+            | UnitType::BarbarianVariant
+            | UnitType::ArmoredBarbarian
+            | UnitType::BarbarianLordOfDeath => true,
         }
     }
 }
@@ -124,7 +135,12 @@ pub struct Units<'a> {
 }
 
 impl<'a> Units<'a> {
-    pub fn new(textures: [&'a Image; UNIT_NUMBER], overground: [&'a Image; 2], margin: usize, arial: &'a Font) -> Units<'a> {
+    pub fn new(
+        textures: [&'a Image; UNIT_NUMBER],
+        overground: [&'a Image; 2],
+        margin: usize,
+        arial: &'a Font,
+    ) -> Units<'a> {
         Units {
             units: arr!(None;61),
             textures,
@@ -332,7 +348,10 @@ impl<'a> Units<'a> {
     }
 
     pub fn next_turn(&mut self, mouse_position: (u32, u32)) -> bool {
-        if self.next_turn_button.is_hover_with_mouse_position(mouse_position) {
+        if self
+            .next_turn_button
+            .is_hover_with_mouse_position(mouse_position)
+        {
             for unit in self.units.iter_mut().filter_map(|u| u.as_mut()) {
                 unit.remaining_moves = unit.unit_type.moves_per_turn();
                 unit.action_remaining = true;
