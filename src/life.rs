@@ -127,7 +127,10 @@ impl Life {
         context.set_fill_style(&JsValue::from_str("rgb(0, 255, 100)"));
         for i in 0..self.current {
             if i as isize >= self.current as isize - self.loss {
-                context.set_fill_style(&JsValue::from_str("rgb(255, 0, 0)"));
+                context.set_fill_style(&JsValue::from_str(&format!(
+                    "rgba(255, 0, 0, {})",
+                    (data.animation_frame as f64 % 75.0) / 75.0
+                )));
             }
             context.fill_rect(
                 coords.0 as f64 + (4.0 + i as f64 * point_width) * data.factor,

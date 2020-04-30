@@ -40,6 +40,7 @@ pub struct DrawingData<'a> {
     pub dimensions: (u32, u32),
     pub position: &'a HexIndex,
     pub factor: f64,
+    pub animation_frame: u64,
 }
 
 #[allow(clippy::single_match)]

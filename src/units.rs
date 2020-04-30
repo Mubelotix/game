@@ -3,7 +3,7 @@ use crate::{
     textbox::*, *,
 };
 use arr_macro::arr;
-use std::convert::TryInto;
+use std::{cell::RefCell, convert::TryInto};
 use wasm_bindgen::JsValue;
 use wasm_game_lib::graphics::{canvas::*, color::*, drawable::*, font::*, image::*};
 
@@ -135,6 +135,7 @@ pub struct Units<'a> {
     next_turn_button: Button<'a>,
     selected_unit: Option<SelectedUnit<'a>>,
     barbarian_actions: Vec<(HexIndex, PrevisualisationItem)>,
+    animation_frame: RefCell<u64>,
 }
 
 impl<'a> Units<'a> {
@@ -158,6 +159,7 @@ impl<'a> Units<'a> {
             },
             selected_unit: None,
             barbarian_actions: Vec::new(),
+            animation_frame: RefCell::new(0),
         }
     }
 
@@ -474,6 +476,8 @@ impl<'a> std::ops::IndexMut<&HexIndex> for Units<'a> {
 
 impl<'a> Drawable for Units<'a> {
     fn draw_on_canvas(&self, mut canvas: &mut Canvas) {
+        *self.animation_frame.borrow_mut() += 1;
+        let animation_frame: u64 = *self.animation_frame.borrow();
         let dimensions = (canvas.get_width(), canvas.get_height());
         let factor_width: f64 = (dimensions.0 as usize - self.margin) as f64 / CANVAS_WIDTH;
         let factor_height = dimensions.1 as f64 / CANVAS_HEIGHT;
@@ -488,6 +492,7 @@ impl<'a> Drawable for Units<'a> {
             dimensions,
             margin: self.margin,
             position: &0.try_into().unwrap(),
+            animation_frame,
         };
 
         // draw units
